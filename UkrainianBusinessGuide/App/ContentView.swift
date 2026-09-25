@@ -33,7 +33,8 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @Environment(AppStore.self) private var store
-    @State private var selectedTab: AppTab = .dashboard
+    /// `-uiTab finance` у аргументах запуску відкриває потрібну вкладку (для скриншотів у CI).
+    @State private var selectedTab: AppTab = AppTab(rawValue: UserDefaults.standard.string(forKey: "uiTab") ?? "") ?? .dashboard
 
     var body: some View {
         Group {

@@ -1,0 +1,74 @@
+name: iOS збірка
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Збірка, тести та скриншоти
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Версія Xcode
+        run: xcodebuild -version
+
+      - name: Встановити XcodeGen
+        run: brew install xcodegen
+
+      - name: Згенерувати Xcode-проєкт
+        run: xcodegen generate
+
+      - name: Обрати симулятор iPhone
+        id: sim
+        run: echo "udid=$(xcrun simctl list devices available -j | python3 scripts/pick-simulator.py)" >> "$GITHUB_OUTPUT"
+
+      - name: Зібрати та запустити тести
+        run: |
+          mkdir -p build
+          set +e
+          xcodebuild test \
+            -project UkrainianBusinessGuide.xcodeproj \
+            -scheme UkrainianBusinessGuide \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -resultBundlePath build/TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            > build/xcodebuild.log 2>&1
+          status=$?
+          grep -E "error:|Test Case .*(passed|failed)|Executed [0-9]+ test|\*\* (BUILD|TEST) " build/xcodebuild.log | tail -300
+          exit $status
+
+      - name: Зробити скриншоти в симуляторі
+        run: scripts/screenshots.sh "${{ steps.sim.outputs.udid }}" build/Build/Products/Debug-iphonesimulator/UkrainianBusinessGuide.app screenshots
+
+      - name: Запакувати додаток для симулятора
+        run: cd build/Build/Products/Debug-iphonesimulator && zip -qr "$GITHUB_WORKSPACE/BusinessCompass-simulator.zip" UkrainianBusinessGuide.app
+
+      - name: Скриншоти
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
+
+      - name: Додаток для iOS Simulator
+        uses: actions/upload-artifact@v4
+        with:
+          name: BusinessCompass-simulator
+          path: BusinessCompass-simulator.zip
+
+      - name: Журнал збірки (при помилці)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            build/xcodebuild.log
+            build/TestResults.xcresult

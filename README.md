@@ -69,6 +69,25 @@ open UkrainianBusinessGuide.xcodeproj
 xcodebuild test -scheme UkrainianBusinessGuide -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
+## 🤖 Автоматична збірка (без Mac)
+
+Кожен push запускає GitHub Actions на macOS (`.github/workflows/ios.yml`):
+збірка → юніт-тести → запуск у симуляторі iPhone → скриншоти всіх екранів (світла й темна теми).
+
+**Як переглянути результат:** вкладка **Actions** у репозиторії → останній запуск «iOS збірка» →
+внизу сторінки розділ **Artifacts**:
+- `screenshots` — PNG кожного екрана;
+- `BusinessCompass-simulator` — зібраний `.app` для iOS Simulator;
+- `build-log` — журнал, якщо збірка впала.
+
+Запустити вручну: **Actions → iOS збірка → Run workflow**.
+
+**Відкрити `.app` на Mac:** розпакуйте архів, запустіть Simulator (`open -a Simulator`) і
+перетягніть `UkrainianBusinessGuide.app` у вікно симулятора (або `xcrun simctl install booted UkrainianBusinessGuide.app`).
+
+**На реальному iPhone** потрібен підпис Apple: безкоштовно — через Xcode з вашим Apple ID
+(на 7 днів), або через TestFlight з платним акаунтом Apple Developer.
+
 ## 📐 Податкові параметри
 
 Розрахунки базуються на `TaxParameters.y2026`: мінімальна зарплата 8 647 ₴, прожитковий мінімум 3 328 ₴.
