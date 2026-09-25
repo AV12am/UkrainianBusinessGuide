@@ -49,7 +49,7 @@ struct TaxesView: View {
             .frame(width: 96, height: 96)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("\(profile.fopGroup.title) · \(store.taxEngine.parameters.year)")
+                Text("\(profile.fopGroup.title) · \(String(store.taxEngine.parameters.year))")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
@@ -212,7 +212,7 @@ struct TaxesView: View {
     }
 
     private var disclaimer: some View {
-        Label("Розрахунки орієнтовні й базуються на мінімальній зарплаті \(store.taxEngine.parameters.minimumWage.uah) та прожитковому мінімумі \(store.taxEngine.parameters.subsistenceMinimum.uah) станом на \(store.taxEngine.parameters.year) рік. Місцеві ставки 1–2 груп можуть бути нижчими. Звіряйтеся з податковою або бухгалтером.",
+        Label("Розрахунки орієнтовні й базуються на мінімальній зарплаті \(store.taxEngine.parameters.minimumWage.uah) та прожитковому мінімумі \(store.taxEngine.parameters.subsistenceMinimum.uah) станом на \(String(store.taxEngine.parameters.year)) рік. Місцеві ставки 1–2 груп можуть бути нижчими. Звіряйтеся з податковою або бухгалтером.",
               systemImage: "info.circle")
             .font(.caption)
             .foregroundStyle(.secondary)

@@ -60,7 +60,7 @@ struct DashboardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)).capitalized)
+            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)).capitalizedFirstLetter)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
             Text(store.profile.map { "\(greeting), \($0.ownerName.isEmpty ? "підприємцю" : $0.ownerName)" } ?? greeting)

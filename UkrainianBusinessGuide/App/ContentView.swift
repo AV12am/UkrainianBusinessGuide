@@ -35,6 +35,7 @@ struct ContentView: View {
     @Environment(AppStore.self) private var store
     /// `-uiTab finance` у аргументах запуску відкриває потрібну вкладку (для скриншотів у CI).
     @State private var selectedTab: AppTab = AppTab(rawValue: UserDefaults.standard.string(forKey: "uiTab") ?? "") ?? .dashboard
+    @State private var isKeyboardVisible = false
 
     var body: some View {
         Group {
@@ -50,35 +51,42 @@ struct ContentView: View {
     }
 
     private var mainInterface: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                DashboardView(selectedTab: $selectedTab)
-                    .tabPage(.dashboard)
-                FinanceView()
-                    .tabPage(.finance)
-                TaxesView()
-                    .tabPage(.taxes)
-                OpportunitiesView()
-                    .tabPage(.opportunities)
-                AdvisorView()
-                    .tabPage(.advisor)
+        // Усі вкладки живуть одночасно (зберігають стан), видно лише вибрану.
+        // Панель вкладок — це safeAreaInset, тож кожен екран отримує точний нижній відступ під неї.
+        ZStack {
+            ForEach(AppTab.allCases) { tab in
+                page(for: tab)
+                    .opacity(selectedTab == tab ? 1 : 0)
+                    .allowsHitTesting(selectedTab == tab)
+                    .accessibilityHidden(selectedTab != tab)
             }
-
-            FloatingTabBar(selection: $selectedTab)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-                .ignoresSafeArea(.keyboard)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !isKeyboardVisible {
+                FloatingTabBar(selection: $selectedTab)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 4)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isKeyboardVisible)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
     }
-}
 
-private extension View {
-    /// Ховає системну панель вкладок і резервує місце під плаваючу.
-    func tabPage(_ tab: AppTab) -> some View {
-        self
-            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 64) }
-            .toolbar(.hidden, for: .tabBar)
-            .tag(tab)
+    @ViewBuilder
+    private func page(for tab: AppTab) -> some View {
+        switch tab {
+        case .dashboard: DashboardView(selectedTab: $selectedTab)
+        case .finance: FinanceView()
+        case .taxes: TaxesView()
+        case .opportunities: OpportunitiesView()
+        case .advisor: AdvisorView()
+        }
     }
 }
 

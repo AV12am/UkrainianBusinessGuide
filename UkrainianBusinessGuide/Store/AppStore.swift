@@ -105,7 +105,9 @@ final class AppStore {
         return (0..<months).reversed().compactMap { offset in
             guard let start = calendar.date(byAdding: .month, value: -offset, to: currentMonth),
                   let interval = calendar.dateInterval(of: .month, for: start) else { return nil }
-            return MonthSummary(month: start, income: total(.income, in: interval), expense: total(.expense, in: interval))
+            // Середина місяця: мітка не «перескакує» на сусідній місяць в іншому часовому поясі.
+            let mid = calendar.date(byAdding: .day, value: 14, to: interval.start) ?? start
+            return MonthSummary(month: mid, income: total(.income, in: interval), expense: total(.expense, in: interval))
         }
     }
 
