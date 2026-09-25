@@ -31,10 +31,18 @@ enum AppTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Екрани, які CI відкриває аргументом `-uiScreen` для скриншотів.
+enum DebugScreen: String, Identifiable {
+    case invoices, invoice, importer = "import", declaration
+
+    var id: String { rawValue }
+}
+
 struct ContentView: View {
     @Environment(AppStore.self) private var store
     /// `-uiTab finance` у аргументах запуску відкриває потрібну вкладку (для скриншотів у CI).
     @State private var selectedTab: AppTab = AppTab(rawValue: UserDefaults.standard.string(forKey: "uiTab") ?? "") ?? .dashboard
+    @State private var debugScreen = DebugScreen(rawValue: UserDefaults.standard.string(forKey: "uiScreen") ?? "")
 
     var body: some View {
         Group {
@@ -68,6 +76,22 @@ struct ContentView: View {
                 .tag(AppTab.advisor)
         }
         .sensoryFeedback(.selection, trigger: selectedTab)
+        .sheet(item: $debugScreen) { screen in
+            switch screen {
+            case .invoices:
+                InvoicesView()
+            case .invoice:
+                NavigationStack {
+                    if let first = store.invoices.first {
+                        InvoiceDetailView(invoiceID: first.id)
+                    }
+                }
+            case .importer:
+                ImportView()
+            case .declaration:
+                NavigationStack { DeclarationView() }
+            }
+        }
     }
 }
 

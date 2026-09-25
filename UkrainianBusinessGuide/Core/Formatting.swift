@@ -33,6 +33,25 @@ extension Double {
         return "\(formatter.string(from: NSNumber(value: self)) ?? "0") ₴"
     }
 
+    /// «12 345,00 ₴» — з копійками, для рахунків.
+    var uahExact: String {
+        let formatter = NumberFormatter()
+        formatter.locale = .ukrainian
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return "\(formatter.string(from: NSNumber(value: self)) ?? "0,00") ₴"
+    }
+
+    /// «1,5» або «12» — кількість без зайвих нулів.
+    var quantityText: String {
+        let formatter = NumberFormatter()
+        formatter.locale = .ukrainian
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 3
+        return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
+    }
+
     /// «1,2 млн ₴» — для компактних плиток.
     var uahCompact: String {
         let value = abs(self)
@@ -67,6 +86,11 @@ extension Date.FormatStyle {
 extension Date {
     var shortUkrainian: String {
         formatted(Date.FormatStyle.kyiv.day().month(.wide))
+    }
+
+    /// «25.09.2026»
+    var numericUkrainian: String {
+        formatted(Date.FormatStyle.kyiv.day(.twoDigits).month(.twoDigits).year())
     }
 
     var monthName: String {

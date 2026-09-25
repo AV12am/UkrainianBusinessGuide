@@ -15,6 +15,7 @@ struct DashboardView: View {
     @State private var showSimulator = false
     @State private var showSettings = false
     @State private var showAddTransaction = false
+    @State private var showInvoices = false
 
     var body: some View {
         NavigationStack {
@@ -46,6 +47,7 @@ struct DashboardView: View {
             .sheet(isPresented: $showSimulator) { ScenarioSimulatorView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showAddTransaction) { AddTransactionView() }
+            .sheet(isPresented: $showInvoices) { InvoicesView() }
         }
     }
 
@@ -100,10 +102,24 @@ struct DashboardView: View {
                       detail: runway == nil ? "Доходи покривають витрати" : "Скільки місяців протримаєтесь без доходу")
             LedgerRow(label: "До ліміту групи", value: max(0, limitLeft).uahCompact,
                       detail: "Використано \(store.limitUsage.percent) річного ліміту")
+            LedgerRow(label: "Відкласти на податки", value: store.taxReserve.uah,
+                      detail: reserveDetail)
+            if store.receivables > 0 {
+                LedgerRow(label: "Вам винні клієнти", value: store.receivables.uah,
+                          detail: store.overdueInvoices.isEmpty ? "За неоплаченими рахунками" : "Є прострочені рахунки",
+                          valueColor: store.overdueInvoices.isEmpty ? Theme.ink : Theme.negative)
+            }
 
             incomeSparkline
                 .padding(.top, 16)
         }
+    }
+
+    private var reserveDetail: String {
+        if let rate = store.reserveRate {
+            return "Несплачені податки на 60 днів. З кожного доходу відкладайте \(rate.percent)"
+        }
+        return "Несплачені податки на найближчі 60 днів"
     }
 
     private var incomeSparkline: some View {
@@ -134,6 +150,7 @@ struct DashboardView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 Button("Нова операція") { showAddTransaction = true }
+                Button("Рахунки") { showInvoices = true }
                 Button("Що якщо?") { showSimulator = true }
                 Button("Податки") { selectedTab = .taxes }
                 Button("Запитати радника") { selectedTab = .advisor }

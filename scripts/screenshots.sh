@@ -37,6 +37,10 @@ shot 06-advisor       -uiDemo YES -uiTab advisor
 
 shot 09-forms         -uiDemo YES -uiTab advisor -uiAdvisorMode "Документи"
 shot 10-startup-guide -uiDemo YES -uiTab advisor -uiAdvisorMode "Відкриття"
+shot 11-invoices      -uiDemo YES -uiTab finance -uiScreen invoices
+shot 12-invoice-qr    -uiDemo YES -uiTab finance -uiScreen invoice
+shot 13-import        -uiDemo YES -uiTab finance -uiScreen import
+shot 14-declaration   -uiDemo YES -uiTab taxes -uiScreen declaration
 
 xcrun simctl ui "$UDID" appearance dark
 shot 07-dashboard-dark -uiDemo YES -uiTab dashboard

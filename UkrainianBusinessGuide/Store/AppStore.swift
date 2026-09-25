@@ -8,6 +8,7 @@
 
 import Foundation
 import Observation
+import WidgetKit
 
 @Observable
 final class AppStore {
@@ -18,6 +19,13 @@ final class AppStore {
     private(set) var completedGuideSteps: Set<String> = []
     /// Чи увімкнені нагадування про податкові строки.
     private(set) var remindersEnabled = false
+    private(set) var invoices: [Invoice] = []
+    private(set) var paymentDetails = PaymentDetails()
+    /// Вхід за Face ID / кодом пристрою.
+    private(set) var lockEnabled = false
+    /// Рахунок monobank, з якого підтягується виписка. Сам токен — у Keychain.
+    private(set) var monobankAccountID: String?
+    private(set) var lastBankSync: Date?
 
     var taxEngine = TaxEngine()
 
@@ -31,6 +39,11 @@ final class AppStore {
         // Необов'язкові поля: файли, збережені старішими версіями, читаються без помилок.
         var completedGuideSteps: Set<String>?
         var remindersEnabled: Bool?
+        var invoices: [Invoice]?
+        var paymentDetails: PaymentDetails?
+        var lockEnabled: Bool?
+        var monobankAccountID: String?
+        var lastBankSync: Date?
     }
 
     /// `fileURL == nil` — стан лише в пам'яті (превью, тести).
@@ -62,6 +75,131 @@ final class AppStore {
     func delete(_ transaction: Transaction) {
         transactions.removeAll { $0.id == transaction.id }
         persist()
+    }
+
+    func setCategory(_ category: TransactionCategory, for transaction: Transaction) {
+        guard category.kind == transaction.kind,
+              let index = transactions.firstIndex(where: { $0.id == transaction.id }) else { return }
+        transactions[index].category = category
+        persist()
+    }
+
+    // MARK: - Імпорт виписки
+
+    /// Операції з виписки, яких ще немає в журналі.
+    func newOperations(_ operations: [ImportedOperation]) -> [ImportedOperation] {
+        let knownIDs = Set(transactions.compactMap(\.externalID))
+        let knownFingerprints = Set(transactions.map(fingerprint))
+        return operations.filter { operation in
+            !knownIDs.contains(operation.externalID) && !knownFingerprints.contains(fingerprint(operation.transaction))
+        }
+    }
+
+    /// Додає нові операції з виписки. Повертає, скільки додано.
+    @discardableResult
+    func importOperations(_ operations: [ImportedOperation]) -> Int {
+        let fresh = newOperations(operations)
+        guard !fresh.isEmpty else { return 0 }
+        transactions.append(contentsOf: fresh.map(\.transaction))
+        transactions.sort { $0.date > $1.date }
+        persist()
+        refreshReminders()
+        return fresh.count
+    }
+
+    func setMonobankAccount(_ id: String?) {
+        monobankAccountID = id
+        persist()
+    }
+
+    func markBankSynced(at date: Date = .now) {
+        lastBankSync = date
+        persist()
+    }
+
+    private func fingerprint(_ transaction: Transaction) -> String {
+        let day = calendar.startOfDay(for: transaction.date).timeIntervalSince1970
+        return "\(Int(day))|\(String(format: "%.2f", transaction.signedAmount))|\(transaction.note.lowercased())"
+    }
+
+    // MARK: - Рахунки клієнтам
+
+    func save(_ invoice: Invoice) {
+        if let index = invoices.firstIndex(where: { $0.id == invoice.id }) {
+            invoices[index] = invoice
+        } else {
+            invoices.append(invoice)
+        }
+        invoices.sort { $0.issueDate > $1.issueDate }
+        persist()
+    }
+
+    func delete(_ invoice: Invoice) {
+        invoices.removeAll { $0.id == invoice.id }
+        transactions.removeAll { $0.externalID == Self.invoiceTransactionID(invoice) }
+        persist()
+    }
+
+    /// Позначає рахунок оплаченим і записує дохід; повторний виклик скасовує оплату.
+    func togglePaid(_ invoice: Invoice, on date: Date = .now) {
+        guard let index = invoices.firstIndex(where: { $0.id == invoice.id }) else { return }
+        let transactionID = Self.invoiceTransactionID(invoice)
+        if invoices[index].paidDate == nil {
+            invoices[index].paidDate = date
+            let note = "Оплата рахунку № \(invoice.number), \(invoice.clientName)"
+            transactions.append(Transaction(date: date, amount: invoice.total, category: .services, note: note, externalID: transactionID))
+            transactions.sort { $0.date > $1.date }
+        } else {
+            invoices[index].paidDate = nil
+            transactions.removeAll { $0.externalID == transactionID }
+        }
+        persist()
+        refreshReminders()
+    }
+
+    var nextInvoiceNumber: String {
+        let year = calendar.component(.year, from: .now)
+        let thisYear = invoices.filter { $0.number.hasPrefix("\(year)-") }.count
+        return "\(year)-" + String(format: "%03d", thisYear + 1)
+    }
+
+    /// Сума неоплачених рахунків.
+    var receivables: Double {
+        invoices.filter { $0.paidDate == nil }.reduce(0) { $0 + $1.total }
+    }
+
+    var overdueInvoices: [Invoice] {
+        invoices.filter { $0.status() == .overdue }
+    }
+
+    func savePaymentDetails(_ details: PaymentDetails) {
+        paymentDetails = details
+        persist()
+    }
+
+    private static func invoiceTransactionID(_ invoice: Invoice) -> String { "invoice:" + invoice.id.uuidString }
+
+    // MARK: - Безпека й резервна копія
+
+    func setLockEnabled(_ enabled: Bool) {
+        lockEnabled = enabled
+        persist()
+    }
+
+    /// Усі дані одним JSON-файлом. Токен monobank у копію не потрапляє.
+    func backupData() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode(snapshot)
+    }
+
+    func restoreBackup(from data: Data) throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        apply(try decoder.decode(Snapshot.self, from: data))
+        persist()
+        refreshReminders()
     }
 
     func toggleDeadline(_ deadline: TaxDeadline) {
@@ -118,6 +256,12 @@ final class AppStore {
         completedDeadlineIDs = []
         completedGuideSteps = []
         remindersEnabled = false
+        invoices = []
+        paymentDetails = PaymentDetails()
+        lockEnabled = false
+        monobankAccountID = nil
+        lastBankSync = nil
+        Keychain.set(nil, for: MonobankClient.tokenKey)
         persist()
         refreshReminders()
     }
@@ -189,6 +333,24 @@ final class AppStore {
 
     var upcomingDeadlines: [TaxDeadline] {
         deadlines().filter { !completedDeadlineIDs.contains($0.id) }
+    }
+
+    /// Податкова скарбничка: скільки мати відкладеним на несплачені податки найближчих 60 днів
+    /// (включно з простроченими).
+    var taxReserve: Double {
+        guard let horizon = calendar.date(byAdding: .day, value: 60, to: .now) else { return 0 }
+        return (overdueDeadlines + upcomingDeadlines)
+            .filter { $0.kind == .payment && $0.date <= horizon }
+            .compactMap(\.estimatedAmount)
+            .reduce(0, +)
+    }
+
+    /// Частка кожного доходу, яку варто відкладати: для 3 групи — ставка єдиного податку й військовий збір.
+    /// Для 1–2 груп податки фіксовані й не залежать від доходу.
+    var reserveRate: Double? {
+        guard let profile, profile.fopGroup == .third,
+              let rate = taxEngine.singleTaxRate(for: .third, isVATPayer: profile.isVATPayer) else { return nil }
+        return rate + 0.01
     }
 
     /// Строки за останні 30 днів, які не позначені як виконані.
@@ -265,32 +427,78 @@ final class AppStore {
         }
         transactions = demo.sorted { $0.date > $1.date }
         completedDeadlineIDs = []
+
+        paymentDetails = PaymentDetails(fullName: "ФОП Коваленко Олена Петрівна", taxID: "3456789012",
+                                        iban: "UA213223130000026007233566001", bankName: "АТ «Універсал Банк»")
+        let day = { (offset: Int) in self.calendar.date(byAdding: .day, value: offset, to: now) ?? now }
+        invoices = [
+            Invoice(number: "2026-003", clientName: "ТОВ «Смачна справа»", clientCode: "43210987",
+                    items: [InvoiceItem(title: "Кава в зернах, 1 кг", quantity: 12, price: 780),
+                            InvoiceItem(title: "Доставка", quantity: 1, price: 250)],
+                    issueDate: day(-3), dueDate: day(7)),
+            Invoice(number: "2026-002", clientName: "Коворкінг «Простір»", clientCode: "",
+                    items: [InvoiceItem(title: "Кейтеринг на захід, 40 осіб", quantity: 1, price: 16_400)],
+                    issueDate: day(-20), dueDate: day(-6)),
+            Invoice(number: "2026-001", clientName: "ФОП Мельник І. В.", clientCode: "2987654321",
+                    items: [InvoiceItem(title: "Кава для офісу, місячний абонемент", quantity: 1, price: 5_600)],
+                    issueDate: day(-34), dueDate: day(-24), paidDate: day(-26))
+        ]
         persist()
     }
 
     // MARK: - Збереження
 
-    private func load() {
-        guard let fileURL,
-              let data = try? Data(contentsOf: fileURL),
-              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
+    private var snapshot: Snapshot {
+        Snapshot(profile: profile, transactions: transactions, completedDeadlineIDs: completedDeadlineIDs,
+                 completedGuideSteps: completedGuideSteps, remindersEnabled: remindersEnabled,
+                 invoices: invoices, paymentDetails: paymentDetails, lockEnabled: lockEnabled,
+                 monobankAccountID: monobankAccountID, lastBankSync: lastBankSync)
+    }
+
+    private func apply(_ snapshot: Snapshot) {
         profile = snapshot.profile
         transactions = snapshot.transactions.sorted { $0.date > $1.date }
         completedDeadlineIDs = snapshot.completedDeadlineIDs
         completedGuideSteps = snapshot.completedGuideSteps ?? []
         remindersEnabled = snapshot.remindersEnabled ?? false
+        invoices = (snapshot.invoices ?? []).sorted { $0.issueDate > $1.issueDate }
+        paymentDetails = snapshot.paymentDetails ?? PaymentDetails()
+        lockEnabled = snapshot.lockEnabled ?? false
+        monobankAccountID = snapshot.monobankAccountID
+        lastBankSync = snapshot.lastBankSync
+    }
+
+    private func load() {
+        guard let fileURL,
+              let data = try? Data(contentsOf: fileURL),
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
+        apply(snapshot)
     }
 
     private func persist() {
         guard let fileURL else { return }
-        let snapshot = Snapshot(profile: profile, transactions: transactions, completedDeadlineIDs: completedDeadlineIDs,
-                                completedGuideSteps: completedGuideSteps, remindersEnabled: remindersEnabled)
         do {
             let data = try JSONEncoder().encode(snapshot)
             try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
         } catch {
             assertionFailure("Не вдалося зберегти дані: \(error)")
         }
+        publishWidgetSnapshot()
+    }
+
+    /// Дані для віджета на головному екрані й екрані блокування.
+    private func publishWidgetSnapshot() {
+        let next = upcomingDeadlines.first { $0.kind == .payment }
+        let widget = WidgetSnapshot(
+            businessName: profile?.businessName ?? "",
+            nextPayment: next.map { WidgetSnapshot.Payment(title: $0.title, date: $0.date, amount: $0.estimatedAmount) },
+            taxReserve: taxReserve,
+            limitUsage: limitUsage,
+            receivables: receivables,
+            updatedAt: .now
+        )
+        widget.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 

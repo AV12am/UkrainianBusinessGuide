@@ -73,6 +73,10 @@ struct AddTransactionView: View {
                 Section {
                     DatePicker("Дата", selection: $date, displayedComponents: .date)
                     TextField("Коментар", text: $note)
+                } footer: {
+                    if kind == .income, let rate = store.reserveRate, let amount, amount > 0 {
+                        Text("Відкладіть ≈ \((amount * rate).uah) на податки: \(rate.percent) від доходу.")
+                    }
                 }
             }
             .screenBackground()

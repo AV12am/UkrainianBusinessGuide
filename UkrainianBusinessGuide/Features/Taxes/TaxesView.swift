@@ -17,7 +17,18 @@ struct TaxesView: View {
                 if let profile = store.profile {
                     VStack(alignment: .leading, spacing: 36) {
                         limit(profile)
-                        quarter(profile)
+                        VStack(spacing: 14) {
+                            quarter(profile)
+                            NavigationLink {
+                                DeclarationView()
+                            } label: {
+                                LinkRowLabel(title: "Дані для декларації",
+                                             text: profile.fopGroup == .third
+                                                 ? "Дохід наростаючим підсумком і податки по кварталах."
+                                                 : "Річний дохід і ліміт групи для декларації.")
+                            }
+                            .buttonStyle(.plain)
+                        }
                         calendar
                         calculator(profile)
                         disclaimer

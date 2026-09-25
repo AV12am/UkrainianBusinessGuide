@@ -264,6 +264,37 @@ struct DeadlineRow: View {
     }
 }
 
+/// Рядок-перехід між лініями: заголовок, пояснення, стрілка. Для Button і NavigationLink.
+struct LinkRowLabel: View {
+    let title: String
+    let text: String
+    var showsTopRule = true
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if showsTopRule { Rule(color: Theme.ink.opacity(0.85)) }
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.display(20))
+                        .foregroundStyle(Theme.ink)
+                    Text(text)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkMuted)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(Theme.accent)
+            }
+            .padding(.vertical, 14)
+            Rule()
+        }
+        .contentShape(Rectangle())
+    }
+}
+
 /// Порожній стан розділу.
 struct EmptyNote: View {
     let text: String

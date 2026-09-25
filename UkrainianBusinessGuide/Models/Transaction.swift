@@ -70,6 +70,8 @@ struct Transaction: Codable, Identifiable, Equatable {
     var amount: Double
     var category: TransactionCategory
     var note: String
+    /// Ідентифікатор операції в банку, якщо її імпортовано з виписки: повторний імпорт не створює дублікатів.
+    var externalID: String? = nil
 
     var kind: TransactionKind { category.kind }
     /// Сума зі знаком: дохід додатний, витрата від'ємна.

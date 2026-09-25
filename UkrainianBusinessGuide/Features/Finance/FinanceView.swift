@@ -13,6 +13,8 @@ struct FinanceView: View {
     @State private var filter: Filter = .all
     @State private var showAdd = false
     @State private var showSimulator = false
+    @State private var showInvoices = false
+    @State private var showImport = false
     @State private var selectedMonth: Date?
 
     private struct ChartPoint: Identifiable {
@@ -38,6 +40,15 @@ struct FinanceView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        showImport = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .tint(Theme.ink)
+                    .accessibilityLabel("Імпорт банківської виписки")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
                         showAdd = true
                     } label: {
                         Image(systemName: "plus")
@@ -48,6 +59,8 @@ struct FinanceView: View {
             }
             .sheet(isPresented: $showAdd) { AddTransactionView() }
             .sheet(isPresented: $showSimulator) { ScenarioSimulatorView() }
+            .sheet(isPresented: $showInvoices) { InvoicesView() }
+            .sheet(isPresented: $showImport) { ImportView() }
         }
     }
 
@@ -125,31 +138,27 @@ struct FinanceView: View {
     // MARK: - Сценарії
 
     private var scenarioLink: some View {
-        Button {
-            showSimulator = true
-        } label: {
-            VStack(spacing: 0) {
-                Rule(color: Theme.ink.opacity(0.85))
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Що якщо?")
-                            .font(.display(20))
-                            .foregroundStyle(Theme.ink)
-                        Text("Порахуйте, як зміна цін, найм чи нові витрати вплинуть на прибуток і податки.")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.inkMuted)
-                            .multilineTextAlignment(.leading)
-                    }
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                        .foregroundStyle(Theme.accent)
-                }
-                .padding(.vertical, 14)
-                Rule()
+        VStack(spacing: 0) {
+            Button {
+                showSimulator = true
+            } label: {
+                LinkRowLabel(title: "Що якщо?", text: "Порахуйте, як зміна цін, найм чи нові витрати вплинуть на прибуток і податки.")
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            Button {
+                showInvoices = true
+            } label: {
+                LinkRowLabel(title: "Рахунки клієнтам", text: invoicesSummary, showsTopRule: false)
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+    }
+
+    private var invoicesSummary: String {
+        let unpaid = store.receivables
+        guard unpaid > 0 else { return "Рахунок у PDF з QR-кодом для оплати за два дотики." }
+        let overdue = store.overdueInvoices.count
+        return "Вам винні \(unpaid.uah)" + (overdue > 0 ? ", прострочено рахунків: \(overdue)." : ".")
     }
 
     // MARK: - Журнал операцій
@@ -168,12 +177,17 @@ struct FinanceView: View {
             VStack(spacing: 0) {
                 Rule(color: Theme.ink.opacity(0.85))
                 if filteredTransactions.isEmpty {
-                    EmptyNote(text: "Операцій ще немає. Додайте першу кнопкою «+» угорі.")
+                    EmptyNote(text: "Операцій ще немає. Додайте першу кнопкою «+» або імпортуйте виписку з банку.")
                 }
                 LazyVStack(spacing: 0) {
                     ForEach(filteredTransactions) { transaction in
                         TransactionRow(transaction: transaction)
                             .contextMenu {
+                                Menu("Категорія") {
+                                    ForEach(TransactionCategory.categories(for: transaction.kind)) { category in
+                                        Button(category.title) { store.setCategory(category, for: transaction) }
+                                    }
+                                }
                                 Button("Видалити", systemImage: "trash", role: .destructive) {
                                     withAnimation { store.delete(transaction) }
                                 }
