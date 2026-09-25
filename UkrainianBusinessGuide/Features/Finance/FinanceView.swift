@@ -7,8 +7,10 @@ import Charts
 import SwiftUI
 
 struct FinanceView: View {
+    enum Filter: Hashable { case all, income, expense }
+
     @Environment(AppStore.self) private var store
-    @State private var filter: TransactionKind?
+    @State private var filter: Filter = .all
     @State private var showAdd = false
     @State private var showSimulator = false
     @State private var selectedMonth: Date?
@@ -22,44 +24,15 @@ struct FinanceView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    chartCard
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                    simulatorBanner
-                        .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 0, trailing: 0))
-                        .listRowBackground(Color.clear)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 36) {
+                    overview
+                    scenarioLink
+                    ledger
                 }
-                .listRowSeparator(.hidden)
-
-                Section {
-                    filterBar
-                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                    if filteredTransactions.isEmpty {
-                        ContentUnavailableView("Операцій ще немає", systemImage: "tray",
-                                               description: Text("Додайте перший дохід чи витрату кнопкою «+»."))
-                            .listRowBackground(Color.clear)
-                    }
-                    ForEach(filteredTransactions) { transaction in
-                        TransactionRow(transaction: transaction)
-                            .listRowBackground(Rectangle().fill(.ultraThinMaterial))
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    withAnimation { store.delete(transaction) }
-                                } label: {
-                                    Label("Видалити", systemImage: "trash")
-                                }
-                            }
-                    }
-                } header: {
-                    Text("Операції").font(.title3.weight(.bold)).foregroundStyle(.primary).textCase(nil)
-                }
+                .padding(.horizontal, Theme.gutter)
+                .padding(.bottom, 32)
             }
-            .listStyle(.insetGrouped)
-            .tabBarSafeArea()
             .screenBackground()
             .navigationTitle("Фінанси")
             .toolbar {
@@ -67,8 +40,9 @@ struct FinanceView: View {
                     Button {
                         showAdd = true
                     } label: {
-                        Image(systemName: "plus.circle.fill").font(.title2)
+                        Image(systemName: "plus")
                     }
+                    .tint(Theme.ink)
                     .accessibilityLabel("Додати операцію")
                 }
             }
@@ -77,14 +51,9 @@ struct FinanceView: View {
         }
     }
 
-    private var filteredTransactions: [Transaction] {
-        guard let filter else { return store.transactions }
-        return store.transactions.filter { $0.kind == filter }
-    }
+    // MARK: - Огляд місяця та графік
 
-    // MARK: - Графік
-
-    private var chartCard: some View {
+    private var overview: some View {
         let summaries = store.monthlySummaries(months: 6)
         let points = summaries.flatMap { summary in
             [ChartPoint(month: summary.month, kind: .income, amount: summary.income),
@@ -93,22 +62,26 @@ struct FinanceView: View {
         let selected = selectedMonth.flatMap { month in
             summaries.first { Calendar.kyiv.isDate($0.month, equalTo: month, toGranularity: .month) }
         }
-        let highlighted = selected ?? summaries.last
+        let shown = selected ?? summaries.last
+        let profit = shown?.profit ?? 0
 
-        return VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(highlighted.map { $0.month.monthName.capitalized } ?? "Цей місяць")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                HStack(alignment: .firstTextBaseline) {
-                    Text((highlighted?.profit ?? 0).uah)
-                        .font(.system(.title, design: .rounded, weight: .heavy))
-                        .foregroundStyle((highlighted?.profit ?? 0) >= 0 ? Theme.mint : Theme.coral)
-                        .contentTransition(.numericText())
-                    Text("прибуток").foregroundStyle(.secondary)
-                }
+        return VStack(alignment: .leading, spacing: 0) {
+            Eyebrow("Прибуток, \(shown.map { $0.month.monthName } ?? "місяць")")
+            Text((profit >= 0 ? "+" : "−") + abs(profit).uah)
+                .font(.display(44, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(profit >= 0 ? Theme.ink : Theme.negative)
+                .contentTransition(.numericText())
+                .padding(.top, 4)
+            HStack(spacing: 16) {
+                Text("Дохід \((shown?.income ?? 0).uah)")
+                Text("Витрати \((shown?.expense ?? 0).uah)")
             }
+            .font(.subheadline)
+            .monospacedDigit()
+            .foregroundStyle(Theme.inkMuted)
+            .padding(.top, 4)
+            .padding(.bottom, 20)
 
             Chart(points) { point in
                 BarMark(
@@ -117,21 +90,24 @@ struct FinanceView: View {
                 )
                 .foregroundStyle(by: .value("Тип", point.kind.title))
                 .position(by: .value("Тип", point.kind.title))
-                .cornerRadius(6)
-                .opacity(isDimmed(point.month, selected: selected) ? 0.45 : 1)
+                .opacity(isDimmed(point.month, selected: selected) ? 0.35 : 1)
             }
-            .chartForegroundStyleScale([TransactionKind.income.title: Theme.mint, TransactionKind.expense.title: Theme.coral])
+            .chartForegroundStyleScale([TransactionKind.income.title: Theme.accent,
+                                        TransactionKind.expense.title: Theme.ink.opacity(0.25)])
+            .chartLegend(position: .bottom, alignment: .leading)
             .chartXAxis {
                 AxisMarks(values: .stride(by: .month)) { _ in
                     AxisValueLabel(format: .dateTime.month(.abbreviated), centered: true)
+                        .foregroundStyle(Theme.inkMuted)
                 }
             }
             .chartYAxis {
-                AxisMarks { value in
-                    AxisGridLine()
+                AxisMarks(position: .trailing) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Theme.rule)
                     AxisValueLabel {
                         if let amount = value.as(Double.self) {
-                            Text(amount.uahCompact)
+                            Text(amount.uahCompact).foregroundStyle(Theme.inkMuted)
                         }
                     }
                 }
@@ -139,7 +115,6 @@ struct FinanceView: View {
             .chartXSelection(value: $selectedMonth)
             .frame(height: 200)
         }
-        .glassCard(padding: 20)
     }
 
     private func isDimmed(_ month: Date, selected: MonthSummary?) -> Bool {
@@ -147,38 +122,65 @@ struct FinanceView: View {
         return !Calendar.kyiv.isDate(selected.month, equalTo: month, toGranularity: .month)
     }
 
-    private var simulatorBanner: some View {
+    // MARK: - Сценарії
+
+    private var scenarioLink: some View {
         Button {
             showSimulator = true
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Симулятор «Що якщо»").font(.headline)
-                    Text("Ціни, найм, витрати → прибуток і податки").font(.caption).opacity(0.85)
+            VStack(spacing: 0) {
+                Rule(color: Theme.ink.opacity(0.85))
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Що якщо?")
+                            .font(.display(20))
+                            .foregroundStyle(Theme.ink)
+                        Text("Порахуйте, як зміна цін, найм чи нові витрати вплинуть на прибуток і податки.")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.inkMuted)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.right")
+                        .foregroundStyle(Theme.accent)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
+                .padding(.vertical, 14)
+                Rule()
             }
-            .foregroundStyle(.white)
-            .padding(16)
-            .background(
-                LinearGradient(colors: [Theme.violet, Theme.blue], startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
-    private var filterBar: some View {
-        HStack(spacing: 8) {
-            Chip(title: "Усі", isSelected: filter == nil) { filter = nil }
-            Chip(title: "Доходи", icon: "arrow.down.left", isSelected: filter == .income) { filter = .income }
-            Chip(title: "Витрати", icon: "arrow.up.right", isSelected: filter == .expense) { filter = .expense }
+    // MARK: - Журнал операцій
+
+    private var filteredTransactions: [Transaction] {
+        switch filter {
+        case .all: return store.transactions
+        case .income: return store.transactions.filter { $0.kind == .income }
+        case .expense: return store.transactions.filter { $0.kind == .expense }
+        }
+    }
+
+    private var ledger: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            FilterTabs(options: [(title: "Усі операції", value: Filter.all), (title: "Доходи", value: Filter.income), (title: "Витрати", value: Filter.expense)], selection: $filter)
+            VStack(spacing: 0) {
+                Rule(color: Theme.ink.opacity(0.85))
+                if filteredTransactions.isEmpty {
+                    EmptyNote(text: "Операцій ще немає. Додайте першу кнопкою «+» угорі.")
+                }
+                LazyVStack(spacing: 0) {
+                    ForEach(filteredTransactions) { transaction in
+                        TransactionRow(transaction: transaction)
+                            .contextMenu {
+                                Button("Видалити", systemImage: "trash", role: .destructive) {
+                                    withAnimation { store.delete(transaction) }
+                                }
+                            }
+                    }
+                }
+            }
         }
     }
 }
@@ -187,22 +189,32 @@ struct TransactionRow: View {
     let transaction: Transaction
 
     var body: some View {
-        HStack(spacing: 12) {
-            IconBadge(systemName: transaction.category.icon, tint: transaction.kind == .income ? Theme.mint : Theme.coral, size: 40)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note.isEmpty ? transaction.category.title : transaction.note)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                Text("\(transaction.category.title) · \(transaction.date.shortUkrainian)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                Text(transaction.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkMuted)
+                    .frame(width: 40, alignment: .leading)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(transaction.note.isEmpty ? transaction.category.title : transaction.note)
+                        .font(.body)
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Text(transaction.category.title)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.inkMuted)
+                }
+                Spacer(minLength: 8)
+                Text((transaction.kind == .income ? "+" : "−") + transaction.amount.uah)
+                    .font(.body)
+                    .monospacedDigit()
+                    .foregroundStyle(transaction.kind == .income ? Theme.positive : Theme.ink)
             }
-            Spacer()
-            Text((transaction.kind == .income ? "+" : "−") + transaction.amount.uah)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(transaction.kind == .income ? Theme.mint : .primary)
+            .padding(.vertical, 12)
+            Rule()
         }
-        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
     }
 }
 

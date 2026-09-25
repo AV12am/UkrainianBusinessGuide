@@ -13,28 +13,29 @@ struct OpportunitiesView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    hero
-                    filters
-                    ForEach(ranked, id: \.opportunity.id) { item in
-                        Button {
-                            selected = item.opportunity
-                        } label: {
-                            OpportunityCard(opportunity: item.opportunity, match: item.match)
+                VStack(alignment: .leading, spacing: 24) {
+                    intro
+                    FilterTabs(options: filterOptions, selection: $typeFilter)
+                    VStack(spacing: 0) {
+                        Rule(color: Theme.ink.opacity(0.85))
+                        ForEach(ranked, id: \.opportunity.id) { item in
+                            Button {
+                                selected = item.opportunity
+                            } label: {
+                                OpportunityRow(opportunity: item.opportunity, match: item.match)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
-                    Label("Умови програм змінюються. Перед подачею перевіряйте актуальну інформацію на офіційному сайті.", systemImage: "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
+                    Text("Умови програм змінюються. Перед подачею перевірте актуальну інформацію на офіційному сайті.")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.inkMuted)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.bottom, 32)
             }
-            .tabBarSafeArea()
             .screenBackground()
-            .navigationTitle("Можливості")
+            .navigationTitle("Підтримка")
             .sheet(item: $selected) { opportunity in
                 OpportunityDetailView(opportunity: opportunity,
                                       match: store.profile.map { OpportunityCatalog.matchScore(opportunity, for: $0) } ?? 0)
@@ -42,84 +43,77 @@ struct OpportunitiesView: View {
         }
     }
 
+    private var filterOptions: [(title: String, value: OpportunityType?)] {
+        var options: [(title: String, value: OpportunityType?)] = [(title: "Усі", value: nil)]
+        options += OpportunityType.allCases.map { (title: $0.title, value: Optional($0)) }
+        return options
+    }
+
     private var ranked: [(opportunity: Opportunity, match: Double)] {
         guard let profile = store.profile else { return [] }
         return OpportunityCatalog.ranked(for: profile).filter { typeFilter == nil || $0.opportunity.type == typeFilter }
     }
 
-    private var hero: some View {
+    private var intro: some View {
         let strong = store.profile.map { profile in
             OpportunityCatalog.all.filter { OpportunityCatalog.matchScore($0, for: profile) >= 0.7 }.count
         } ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: "sparkles")
-                .font(.title.weight(.bold))
-            Text("\(strong) програм добре підходять вам")
-                .font(.title2.weight(.heavy))
-            Text("Підбір враховує галузь, статуси засновника та розмір команди.")
-                .font(.subheadline)
-                .opacity(0.85)
-        }
-        .foregroundStyle(Color(red: 0.12, green: 0.14, blue: 0.2))
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.sun, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
-    }
-
-    private var filters: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Chip(title: "Усі", isSelected: typeFilter == nil) { typeFilter = nil }
-                ForEach(OpportunityType.allCases) { type in
-                    Chip(title: type.title, icon: type.icon, isSelected: typeFilter == type) { typeFilter = type }
-                }
-            }
-            .padding(.vertical, 2)
-        }
+        return Text("Програми відсортовані за тим, наскільки підходять вашому бізнесу. Добре підходять — \(strong).")
+            .font(.body)
+            .foregroundStyle(Theme.inkMuted)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
-struct MatchBadge: View {
+/// Відсоток відповідності — текстом, колір лише для числа.
+struct MatchLabel: View {
     let match: Double
 
     var body: some View {
-        Text("\(Int((match * 100).rounded()))% збіг")
-            .font(.caption.weight(.bold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .foregroundStyle(Theme.color(forScore: match))
-            .background(Theme.color(forScore: match).opacity(0.15), in: Capsule())
+        Text("збіг \(Int((match * 100).rounded())) %")
+            .font(.footnote.weight(.medium))
+            .monospacedDigit()
+            .foregroundStyle(match >= 0.7 ? Theme.positive : (match >= 0.4 ? Theme.caution : Theme.inkMuted))
     }
 }
 
-struct OpportunityCard: View {
+struct OpportunityRow: View {
     let opportunity: Opportunity
     let match: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                IconBadge(systemName: opportunity.type.icon, tint: Theme.blue, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(opportunity.title).font(.headline)
-                    Text(opportunity.provider).font(.caption).foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Eyebrow(opportunity.type.title)
+                    Spacer()
+                    MatchLabel(match: match)
                 }
-                Spacer(minLength: 8)
-                MatchBadge(match: match)
+                Text(opportunity.title)
+                    .font(.display(21))
+                    .foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.leading)
+                Text(opportunity.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkMuted)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                HStack {
+                    Text(opportunity.amountDescription)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("· \(opportunity.provider)")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkMuted)
+                        .lineLimit(1)
+                }
+                .padding(.top, 2)
             }
-            Text(opportunity.summary)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-            HStack {
-                Label(opportunity.amountDescription, systemImage: "banknote")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.blue)
-                Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 16)
+            Rule()
         }
-        .glassCard()
+        .contentShape(Rectangle())
     }
 }
 
@@ -132,40 +126,56 @@ struct OpportunityDetailView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        IconBadge(systemName: opportunity.type.icon, tint: Theme.blue, size: 56)
-                        Spacer()
-                        MatchBadge(match: match)
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Eyebrow(opportunity.type.title)
+                            Spacer()
+                            MatchLabel(match: match)
+                        }
+                        Text(opportunity.title)
+                            .font(.display(30, weight: .bold))
+                            .foregroundStyle(Theme.ink)
+                        Text(opportunity.provider)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.inkMuted)
                     }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(opportunity.title).font(.title.weight(.heavy))
-                        Text(opportunity.provider).foregroundStyle(.secondary)
-                    }
-                    Text(opportunity.amountDescription)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(Theme.brand)
-                    Text(opportunity.summary)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Основні вимоги").font(.headline)
-                        ForEach(opportunity.requirements, id: \.self) { requirement in
-                            Label(requirement, systemImage: "checkmark.circle.fill")
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(Theme.mint)
-                                .font(.subheadline)
+                    VStack(spacing: 0) {
+                        Rule(color: Theme.ink.opacity(0.85))
+                        LedgerRow(label: "Сума", value: opportunity.amountDescription, showsRule: false)
+                        Rule()
+                    }
+
+                    Text(opportunity.summary)
+                        .font(.body)
+                        .foregroundStyle(Theme.ink)
+
+                    LedgerSection(title: "Основні вимоги") {
+                        ForEach(Array(opportunity.requirements.enumerated()), id: \.offset) { index, requirement in
+                            VStack(spacing: 0) {
+                                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                                    Text(String(format: "%02d", index + 1))
+                                        .font(.display(15))
+                                        .monospacedDigit()
+                                        .foregroundStyle(Theme.accent)
+                                    Text(requirement)
+                                        .font(.body)
+                                        .foregroundStyle(Theme.ink)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.vertical, 11)
+                                Rule()
+                            }
                         }
                     }
-                    .glassCard()
 
-                    Button {
+                    Button("Відкрити офіційний сайт") {
                         openURL(opportunity.url)
-                    } label: {
-                        Label("Офіційне джерело", systemImage: "arrow.up.right.square")
                     }
                     .buttonStyle(.primary)
                 }
-                .padding()
+                .padding(Theme.gutter)
             }
             .screenBackground()
             .toolbar {
@@ -174,6 +184,7 @@ struct OpportunityDetailView: View {
                 }
             }
         }
+        .tint(Theme.accent)
         .presentationDetents([.medium, .large])
     }
 }

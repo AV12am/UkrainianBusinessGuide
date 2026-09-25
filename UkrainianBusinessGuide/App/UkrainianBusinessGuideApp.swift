@@ -12,6 +12,7 @@ struct UkrainianBusinessGuideApp: App {
     @State private var store: AppStore
 
     init() {
+        Appearance.configure()
         // `-uiDemo YES` у аргументах запуску — демо-дані лише в пам'яті (для скриншотів у CI).
         if UserDefaults.standard.bool(forKey: "uiDemo") {
             let demo = AppStore(fileURL: nil)
@@ -27,7 +28,7 @@ struct UkrainianBusinessGuideApp: App {
             ContentView()
                 .environment(store)
                 .environment(\.locale, .ukrainian)
-                .tint(Theme.blue)
+                .tint(Theme.accent)
         }
     }
 }

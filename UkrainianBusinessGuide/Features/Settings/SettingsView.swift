@@ -18,7 +18,7 @@ struct SettingsView: View {
                     TextField("Ім'я", text: $draft.ownerName)
                     TextField("Назва бізнесу", text: $draft.businessName)
                     Picker("Галузь", selection: $draft.industry) {
-                        ForEach(Industry.allCases) { Label($0.title, systemImage: $0.icon).tag($0) }
+                        ForEach(Industry.allCases) { Text($0.title).tag($0) }
                     }
                     Stepper("Працівників: \(draft.employees)", value: $draft.employees, in: 0...500)
                 }
@@ -56,6 +56,7 @@ struct SettingsView: View {
                     Text("Бізнес Компас зберігає дані лише на цьому пристрої.")
                 }
             }
+            .screenBackground()
             .navigationTitle("Налаштування")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -82,6 +83,7 @@ struct SettingsView: View {
                 if let profile = store.profile { draft = profile }
             }
         }
+        .tint(Theme.accent)
     }
 }
 

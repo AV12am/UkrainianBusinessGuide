@@ -27,29 +27,42 @@ struct AddTransactionView: View {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
 
-                    TextField("0 ₴", value: $amount, format: .number)
-                        .keyboardType(.decimalPad)
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(kind == .income ? Theme.mint : Theme.coral)
-                        .focused($amountFocused)
-                        .listRowBackground(Color.clear)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        TextField("0", value: $amount, format: .number)
+                            .keyboardType(.decimalPad)
+                            .font(.display(44, weight: .bold))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.ink)
+                            .focused($amountFocused)
+                        Text("₴")
+                            .font(.display(28))
+                            .foregroundStyle(Theme.inkMuted)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 0, trailing: 0))
                 }
 
                 Section("Категорія") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 14) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], alignment: .leading, spacing: 8) {
                         ForEach(TransactionCategory.categories(for: kind)) { item in
+                            let isSelected = category == item
                             Button {
                                 category = item
                             } label: {
-                                VStack(spacing: 6) {
-                                    IconBadge(systemName: item.icon, tint: category == item ? .white : Theme.skyBlue, size: 44)
-                                        .background(category == item ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.clear), in: Circle())
-                                    Text(item.title)
-                                        .font(.caption2)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.7)
-                                }
+                                Text(item.title)
+                                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                                    .foregroundStyle(isSelected ? Theme.paper : Theme.ink)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 9)
+                                    .background {
+                                        if isSelected {
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.ink)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.rule)
+                                        }
+                                    }
                             }
                             .buttonStyle(.plain)
                         }
@@ -62,6 +75,7 @@ struct AddTransactionView: View {
                     TextField("Коментар", text: $note)
                 }
             }
+            .screenBackground()
             .navigationTitle("Нова операція")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -75,7 +89,7 @@ struct AddTransactionView: View {
                         dismiss()
                     }
                     .disabled((amount ?? 0) <= 0)
-                    .fontWeight(.bold)
+                    .fontWeight(.semibold)
                 }
             }
             .onChange(of: kind) { _, newKind in
@@ -83,7 +97,7 @@ struct AddTransactionView: View {
             }
             .onAppear { amountFocused = true }
         }
-        .presentationDetents([.large])
+        .tint(Theme.accent)
     }
 }
 

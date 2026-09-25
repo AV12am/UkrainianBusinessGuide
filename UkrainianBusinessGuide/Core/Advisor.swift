@@ -51,7 +51,7 @@ struct LocalAdvisor: AdvisorEngine {
 
         if has("справи", "бізнес", "стан", "пульс", "здоров") {
             let top = context.health.insights.first.map { "\n\nГоловне зараз: \($0.title.lowercased()). \($0.message)" } ?? ""
-            return "Індекс «Пульс бізнесу» — \(context.health.score)/100 (\(context.health.verdict.lowercased())).\n"
+            return "Стан бізнесу — \(context.health.score)/100 (\(context.health.verdict.lowercased())).\n"
                 + context.health.components.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n")
                 + top
         }
@@ -90,14 +90,14 @@ struct LocalAdvisor: AdvisorEngine {
             let salary = 20_000.0
             let employerCost = salary * (1 + ScenarioSimulator.employerContributionRate)
             return "Щоб найняти працівника як ФОП:\n1. Укладіть трудовий договір і подайте повідомлення до податкової до початку роботи.\n2. Щомісяця сплачуйте ПДФО 18% та військовий збір (утримуються з зарплати) і ЄСВ 22% зверху.\n3. Подавайте звіт з ПДФО та ЄСВ щоквартально.\n\nПриклад: зарплата \(salary.uah) коштуватиме вам ≈ \(employerCost.uah) на місяць. Перевірте вплив у симуляторі «Що якщо»."
-                + (profile.fopGroup == .first ? "\n\n⚠️ ФОП 1 групи не може мати найманих працівників." : "")
+                + (profile.fopGroup == .first ? "\n\nЗверніть увагу: ФОП 1 групи не може мати найманих працівників." : "")
         }
 
         if has("грант", "гроші", "фінансув", "кредит", "інвест") {
             let top = OpportunityCatalog.ranked(for: profile).prefix(3)
                 .map { "• \($0.opportunity.title) — \($0.opportunity.amountDescription) (збіг \(Int($0.match * 100))%)" }
                 .joined(separator: "\n")
-            return "Найрелевантніші для вас програми:\n\(top)\n\nДеталі та посилання — у вкладці «Можливості»."
+            return "Найрелевантніші для вас програми:\n\(top)\n\nДеталі та посилання — у вкладці «Підтримка»."
         }
 
         if has("ціна", "ціни", "прибут", "марж") {

@@ -2,115 +2,135 @@
 //  Theme.swift
 //  UkrainianBusinessGuide
 //
-//  Дизайн-система «Бізнес Компас»: синьо-жовта палітра, скляні картки, м'які тіні.
+//  Редакційна дизайн-система «гросбух»: теплий папір, чорнило, один акцент.
+//  Ієрархію будують шрифт і тонкі лінії, а не картки, тіні та градієнти.
 //
 
 import SwiftUI
+import UIKit
 
 enum Theme {
-    static let blue = Color(red: 0.0, green: 0.34, blue: 0.72)
-    static let skyBlue = Color(red: 0.25, green: 0.52, blue: 0.98)
-    static let yellow = Color(red: 1.0, green: 0.84, blue: 0.0)
-    static let amber = Color(red: 1.0, green: 0.62, blue: 0.1)
-    static let mint = Color(red: 0.16, green: 0.78, blue: 0.58)
-    static let coral = Color(red: 0.95, green: 0.33, blue: 0.36)
-    static let violet = Color(red: 0.49, green: 0.36, blue: 0.96)
+    // MARK: Кольори
 
-    static let brand = LinearGradient(colors: [blue, skyBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
-    static let sun = LinearGradient(colors: [yellow, amber], startPoint: .topLeading, endPoint: .bottomTrailing)
-    static let flag = LinearGradient(colors: [skyBlue, blue, yellow], startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Фон сторінки — теплий папір.
+    static let paper = Color(light: 0xF6F2EA, dark: 0x161512)
+    /// Трохи світліша поверхня для полів вводу та повідомлень.
+    static let surface = Color(light: 0xFCFAF5, dark: 0x201E1A)
+    /// Основний текст.
+    static let ink = Color(light: 0x1C1B19, dark: 0xECE7DD)
+    /// Другорядний текст і підписи.
+    static let inkMuted = Color(light: 0x6E685D, dark: 0x9F988B)
+    /// Тонкі лінії-розділювачі.
+    static let rule = Color(light: 0xDCD5C7, dark: 0x35322C)
+    /// Єдиний акцент — глибокий синій.
+    static let accent = Color(light: 0x1F3A93, dark: 0x9DB1EE)
 
-    static let cornerRadius: CGFloat = 24
-    static let spacing: CGFloat = 16
+    // Семантичні кольори — приглушені, лише для значень.
+    static let positive = Color(light: 0x2E6B45, dark: 0x86C49A)
+    static let negative = Color(light: 0xA3402F, dark: 0xE38D7B)
+    static let caution = Color(light: 0x9A6310, dark: 0xE2B25E)
 
     static func color(for severity: Insight.Severity) -> Color {
         switch severity {
-        case .good: return mint
-        case .info: return skyBlue
-        case .warning: return amber
-        case .critical: return coral
+        case .good: return positive
+        case .info: return accent
+        case .warning: return caution
+        case .critical: return negative
         }
     }
 
-    /// Колір для значення 0…1: від червоного через жовтий до зеленого.
+    /// 0…1: чим більше, тим краще.
     static func color(forScore value: Double) -> Color {
         switch value {
-        case ..<0.4: return coral
-        case ..<0.7: return amber
-        default: return mint
+        case ..<0.4: return negative
+        case ..<0.7: return caution
+        default: return positive
         }
     }
+
+    /// Колір для суми зі знаком.
+    static func color(forAmount value: Double) -> Color {
+        value < 0 ? negative : ink
+    }
+
+    // MARK: Розміри
+
+    static let gutter: CGFloat = 20
+    static let radius: CGFloat = 10
 }
 
-/// Живий фон: розмиті кольорові плями у фірмових кольорах поверх системного фону.
-struct AppBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
+// MARK: - Шрифти
 
-    var body: some View {
-        ZStack {
-            Color(.systemGroupedBackground)
-            Circle()
-                .fill(Theme.skyBlue.opacity(colorScheme == .dark ? 0.35 : 0.22))
-                .frame(width: 380)
-                .blur(radius: 90)
-                .offset(x: -140, y: -320)
-            Circle()
-                .fill(Theme.yellow.opacity(colorScheme == .dark ? 0.18 : 0.25))
-                .frame(width: 320)
-                .blur(radius: 90)
-                .offset(x: 160, y: -120)
-            Circle()
-                .fill(Theme.violet.opacity(colorScheme == .dark ? 0.2 : 0.1))
-                .frame(width: 300)
-                .blur(radius: 100)
-                .offset(x: 120, y: 380)
-        }
-        .ignoresSafeArea()
+extension Font {
+    /// Заголовки й великі цифри — New York (засічки).
+    static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        .system(size: size, weight: weight, design: .serif)
+    }
+
+    /// Дрібні підписи розділів.
+    static let eyebrow = Font.system(size: 11, weight: .semibold)
+}
+
+// MARK: - Кольори зі світлою/темною версією
+
+extension Color {
+    init(light: UInt32, dark: UInt32) {
+        self.init(UIColor { traits in
+            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
+        })
     }
 }
 
-struct GlassCard: ViewModifier {
-    var padding: CGFloat = Theme.spacing
-
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.06), radius: 16, y: 8)
+extension UIColor {
+    convenience init(hex: UInt32) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
     }
 }
+
+// MARK: - Фон екрана
 
 extension View {
-    func glassCard(padding: CGFloat = Theme.spacing) -> some View {
-        modifier(GlassCard(padding: padding))
-    }
-
-    /// Стандартне оформлення екрана вкладки.
+    /// Паперовий фон під усім екраном.
     func screenBackground() -> some View {
-        background(AppBackground())
-            .scrollContentBackground(.hidden)
+        scrollContentBackground(.hidden)
+            .background(Theme.paper.ignoresSafeArea())
     }
 }
 
-/// Кнопка з фірмовим градієнтом.
-struct PrimaryButtonStyle: ButtonStyle {
-    var gradient: LinearGradient = Theme.brand
+// MARK: - Кнопки
 
+/// Суцільна кнопка кольору чорнила.
+struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
-            .foregroundStyle(.white)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Theme.paper)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .shadow(color: Theme.blue.opacity(0.3), radius: 12, y: 6)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+            .padding(.vertical, 15)
+            .background(Theme.ink, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+            .opacity(configuration.isPressed ? 0.8 : 1)
+    }
+}
+
+/// Контурна кнопка з тонкою рамкою.
+struct OutlineButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(Theme.ink)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
+                    .strokeBorder(Theme.rule, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.6 : 1)
     }
 }
 
@@ -118,32 +138,23 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
     static var primary: PrimaryButtonStyle { PrimaryButtonStyle() }
 }
 
-// MARK: - Місце під плаваючу панель вкладок
-
-private struct TabBarInsetKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 0
+extension ButtonStyle where Self == OutlineButtonStyle {
+    static var outline: OutlineButtonStyle { OutlineButtonStyle() }
 }
 
-extension EnvironmentValues {
-    /// Висота, яку займає плаваюча панель вкладок унизу екрана (0, коли її сховано).
-    var tabBarInset: CGFloat {
-        get { self[TabBarInsetKey.self] }
-        set { self[TabBarInsetKey.self] = newValue }
+// MARK: - Навігація
+
+enum Appearance {
+    /// Заголовки навігації — тим самим шрифтом із засічками, що й заголовки розділів.
+    static func configure() {
+        // Колір не задаємо: системний колір тексту сам підлаштовується під світлу й темну тему.
+        UINavigationBar.appearance().largeTitleTextAttributes = [.font: serifFont(size: 34, weight: .bold)]
+        UINavigationBar.appearance().titleTextAttributes = [.font: serifFont(size: 17, weight: .semibold)]
     }
-}
 
-private struct TabBarSafeArea: ViewModifier {
-    @Environment(\.tabBarInset) private var inset
-
-    func body(content: Content) -> some View {
-        content.safeAreaPadding(.bottom, inset)
-    }
-}
-
-extension View {
-    /// Резервує місце під плаваючу панель вкладок. Застосовується до кореневого вмісту екрана
-    /// всередині NavigationStack — відступи, задані ззовні стека, до вмісту не доходять.
-    func tabBarSafeArea() -> some View {
-        modifier(TabBarSafeArea())
+    private static func serifFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = base.fontDescriptor.withDesign(.serif) else { return base }
+        return UIFont(descriptor: descriptor, size: size)
     }
 }

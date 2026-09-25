@@ -65,10 +65,3 @@ extension Date {
         formatted(.dateTime.month(.wide).locale(.ukrainian))
     }
 }
-
-extension String {
-    /// «пʼятниця, 25 вересня» → «Пʼятниця, 25 вересня» (на відміну від `capitalized`, решту не чіпає).
-    var capitalizedFirstLetter: String {
-        prefix(1).uppercased() + dropFirst()
-    }
-}
