@@ -36,7 +36,9 @@ struct OnboardingView: View {
 
     private var header: some View {
         HStack {
-            Eyebrow("Бізнес Компас", color: Theme.ink)
+            Text("Бізнес Компас")
+                .font(.display(17))
+                .foregroundStyle(Theme.ink)
             Spacer()
             Text("\(step + 1) / \(stepsCount)")
                 .font(.footnote)
@@ -49,11 +51,11 @@ struct OnboardingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Облік, податки й рішення для ФОП.")
+                    Text("Скільки заробили, скільки платити і коли.")
                         .font(.display(38, weight: .bold))
                         .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Додаєте доходи й витрати — застосунок рахує податки, нагадує про строки та показує, як рішення вплинуть на прибуток.")
+                    Text("Записуйте доходи й витрати. Податки, строки сплати й прогноз прибутку застосунок порахує сам.")
                         .font(.body)
                         .foregroundStyle(Theme.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -62,10 +64,10 @@ struct OnboardingView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     Rule(color: Theme.ink.opacity(0.85))
-                    feature("01", "Стан бізнесу", "Запас грошей, маржа, динаміка й податкові ризики в одному місці.")
-                    feature("02", "Податки ФОП", "Єдиний податок, військовий збір, ЄСВ, ліміт групи та календар строків.")
-                    feature("03", "Що якщо", "Порахуйте наслідки підвищення цін, найму чи нових витрат до рішення.")
-                    feature("04", "Програми підтримки", "Гранти й пільгові кредити, що підходять саме вашому профілю.")
+                    feature("1", "Стан бізнесу", "Скільки грошей, яка маржа, чи росте виручка і чи немає податкових ризиків.")
+                    feature("2", "Податки ФОП", "Єдиний податок, військовий збір і ЄСВ. Нагадування про строки й контроль ліміту групи.")
+                    feature("3", "Що якщо", "Перш ніж підняти ціни чи найняти людину, подивіться, що буде з прибутком.")
+                    feature("4", "Програми підтримки", "Гранти й пільгові кредити, на які ваш бізнес може претендувати.")
                 }
             }
             .padding(.horizontal, Theme.gutter)
@@ -119,7 +121,7 @@ struct OnboardingView: View {
             } footer: {
                 Text(draft.fopGroup.subtitle)
             }
-            Section("Особливі статуси — для підбору програм") {
+            Section("Особливі статуси (для підбору програм)") {
                 ForEach(FounderStatus.allCases) { status in
                     Toggle(status.title, isOn: Binding(
                         get: { draft.statuses.contains(status) },
@@ -154,7 +156,7 @@ struct OnboardingView: View {
             }
 
             Section {
-                Button("Відкрити з прикладом — кав'ярня «Зерно»") {
+                Button("Відкрити з прикладом: кав'ярня «Зерно»") {
                     store.loadDemo()
                 }
             } footer: {

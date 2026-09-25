@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// Дрібний підпис розділу великими літерами.
+/// Дрібний підпис над значенням.
 struct Eyebrow: View {
     let text: String
     var color: Color = Theme.inkMuted
@@ -18,8 +18,6 @@ struct Eyebrow: View {
     var body: some View {
         Text(text)
             .font(.eyebrow)
-            .tracking(1.2)
-            .textCase(.uppercase)
             .foregroundStyle(color)
     }
 }
@@ -52,7 +50,9 @@ struct LedgerSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Eyebrow(title)
+                Text(title)
+                    .font(.display(21))
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 if let actionTitle, let action {
                     Button(actionTitle, action: action)
@@ -235,9 +235,9 @@ struct DeadlineRow: View {
                     HStack(spacing: 0) {
                         Text(deadline.kind == .payment ? "Сплата" : "Звіт")
                         if let amount = deadline.estimatedAmount, amount > 0 {
-                            Text(" · ≈ \(amount.uah)")
+                            Text(", ≈ \(amount.uah)")
                         }
-                        Text(" · ")
+                        Text(", ")
                         Text(dueText).foregroundStyle(urgencyColor)
                     }
                     .font(.footnote)

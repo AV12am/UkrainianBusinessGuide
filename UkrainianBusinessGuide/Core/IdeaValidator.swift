@@ -26,11 +26,11 @@ enum IdeaCriterion: String, CaseIterable, Identifiable {
     var question: String {
         switch self {
         case .demand: return "Наскільки гостро клієнти потребують цього вже зараз?"
-        case .competition: return "Наскільки вільна ніша? (5 — конкурентів майже немає)"
-        case .margin: return "Яка очікувана націнка? (5 — понад 50%)"
+        case .competition: return "Наскільки вільна ніша? (5: конкурентів майже немає)"
+        case .margin: return "Яка очікувана націнка? (5: понад 50%)"
         case .skills: return "Наскільки добре ви знаєте цю сферу?"
-        case .capital: return "Наскільки мало грошей потрібно на старт? (5 — майже нуль)"
-        case .speed: return "Як швидко можна отримати перші гроші? (5 — за тиждень)"
+        case .capital: return "Наскільки мало грошей потрібно на старт? (5: майже нуль)"
+        case .speed: return "Як швидко можна отримати перші гроші? (5: за тиждень)"
         }
     }
 
@@ -60,7 +60,7 @@ enum IdeaCriterion: String, CaseIterable, Identifiable {
         switch self {
         case .demand: return "Проведіть 10 інтерв'ю з потенційними клієнтами й запропонуйте передзамовлення до запуску."
         case .competition: return "Знайдіть вузький сегмент, який конкуренти обслуговують погано, і станьте там №1."
-        case .margin: return "Перегляньте ціноутворення або постачальників — з низькою маржею важко масштабуватись."
+        case .margin: return "Перегляньте ціноутворення або постачальників. З низькою маржею бізнес важко розширювати."
         case .skills: return "Знайдіть партнера чи ментора з галузі або пройдіть коротке навчання."
         case .capital: return "Почніть з мінімальної версії продукту, розгляньте гранти «Власна справа» чи кредити 5-7-9%."
         case .speed: return "Спростіть першу пропозицію до послуги, яку можна продати вже цього тижня."
@@ -84,9 +84,9 @@ enum IdeaValidator {
         let score = Int((weighted * 100).rounded())
         let verdict: String
         switch score {
-        case 75...: verdict = "Сильна ідея — тестуйте на реальних клієнтах вже цього тижня"
+        case 75...: verdict = "Сильна ідея. Перевірте її на реальних клієнтах уже цього тижня"
         case 55..<75: verdict = "Перспективно, але є слабкі місця"
-        case 35..<55: verdict = "Ризиковано — спершу перевірте гіпотези"
+        case 35..<55: verdict = "Ризиковано. Спершу перевірте припущення"
         default: verdict = "Варто переосмислити концепцію"
         }
         let weakest = IdeaCriterion.allCases

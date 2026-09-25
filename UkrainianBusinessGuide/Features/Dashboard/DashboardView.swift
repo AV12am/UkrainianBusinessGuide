@@ -53,7 +53,7 @@ struct DashboardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)))
+            Eyebrow(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)).capitalizedFirstLetter)
             Text(store.profile?.businessName ?? "Мій бізнес")
                 .font(.display(34, weight: .bold))
                 .foregroundStyle(Theme.ink)
@@ -61,7 +61,7 @@ struct DashboardView: View {
             if let profile = store.profile {
                 Text([profile.ownerName, "ФОП \(profile.fopGroup.title)", profile.industry.title]
                     .filter { !$0.isEmpty }
-                    .joined(separator: " · "))
+                    .joined(separator: ", "))
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkMuted)
             }
@@ -152,7 +152,7 @@ struct DashboardView: View {
                     .monospacedDigit()
                     .foregroundStyle(Theme.ink)
                     .contentTransition(.numericText())
-                Text("зі 100 · \(report.verdict.lowercased())")
+                Text("зі 100. \(report.verdict).")
                     .font(.subheadline)
                     .foregroundStyle(Theme.inkMuted)
             }

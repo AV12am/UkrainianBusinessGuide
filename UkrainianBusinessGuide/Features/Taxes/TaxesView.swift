@@ -43,7 +43,7 @@ struct TaxesView: View {
         let tint = usage >= 0.9 ? Theme.negative : (usage >= 0.7 ? Theme.caution : Theme.ink)
 
         return VStack(alignment: .leading, spacing: 0) {
-            Eyebrow("\(profile.fopGroup.title) · дохід за \(String(engine.parameters.year)) рік")
+            Eyebrow("Дохід за \(String(engine.parameters.year)) рік, \(profile.fopGroup.title)")
             Text(store.yearIncome.uah)
                 .font(.display(44, weight: .bold))
                 .monospacedDigit()
@@ -58,7 +58,7 @@ struct TaxesView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 14)
             Meter(value: usage, tint: tint, marks: [0.7, 0.9], height: 6)
-            Text("Позначки на шкалі — 70% і 90% ліміту")
+            Text("Позначки на шкалі: 70% і 90% ліміту")
                 .font(.caption2)
                 .foregroundStyle(Theme.inkMuted)
                 .padding(.top, 8)

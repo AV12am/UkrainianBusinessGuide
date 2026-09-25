@@ -102,7 +102,7 @@ struct OpportunityRow: View {
                     Text(opportunity.amountDescription)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Theme.ink)
-                    Text("· \(opportunity.provider)")
+                    Text(opportunity.provider)
                         .font(.subheadline)
                         .foregroundStyle(Theme.inkMuted)
                         .lineLimit(1)
@@ -155,7 +155,7 @@ struct OpportunityDetailView: View {
                         ForEach(Array(opportunity.requirements.enumerated()), id: \.offset) { index, requirement in
                             VStack(spacing: 0) {
                                 HStack(alignment: .firstTextBaseline, spacing: 14) {
-                                    Text(String(format: "%02d", index + 1))
+                                    Text("\(index + 1)")
                                         .font(.display(15))
                                         .monospacedDigit()
                                         .foregroundStyle(Theme.accent)

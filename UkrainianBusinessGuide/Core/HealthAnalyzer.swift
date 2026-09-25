@@ -137,7 +137,7 @@ enum HealthAnalyzer {
 
         if insights.isEmpty {
             insights.append(Insight(id: "ok", icon: "sparkles", title: "Все під контролем",
-                                    message: "Додайте ще кілька операцій — і аналітика стане точнішою.", severity: .info))
+                                    message: "Що більше операцій ви додасте, то точнішими будуть розрахунки.", severity: .info))
         }
 
         return HealthReport(score: score, components: components, insights: insights.sorted { $0.severity > $1.severity })

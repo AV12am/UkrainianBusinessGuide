@@ -67,8 +67,8 @@ extension Font {
         .system(size: size, weight: weight, design: .serif)
     }
 
-    /// Дрібні підписи розділів.
-    static let eyebrow = Font.system(size: 11, weight: .semibold)
+    /// Дрібні підписи над значеннями.
+    static let eyebrow = Font.footnote
 }
 
 // MARK: - Кольори зі світлою/темною версією

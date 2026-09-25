@@ -112,7 +112,7 @@ struct ScenarioSimulatorView: View {
             id: "group",
             icon: "",
             title: result.exceedsGroupLimit ? "Дохід перевищить ліміт \(baseline.group.title)" : "Можна платити менше податків",
-            message: "Річний дохід за сценарієм — \(result.annualIncome.uahCompact). Вигідніша група: \(result.recommendedGroup.title). Перевірте, чи ваш вид діяльності їй відповідає.",
+            message: "Річний дохід за сценарієм: \(result.annualIncome.uahCompact). Вигідніша група: \(result.recommendedGroup.title). Перевірте, чи ваш вид діяльності їй відповідає.",
             severity: result.exceedsGroupLimit ? .critical : .warning
         ))
     }
