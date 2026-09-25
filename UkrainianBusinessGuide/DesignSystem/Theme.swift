@@ -117,3 +117,33 @@ struct PrimaryButtonStyle: ButtonStyle {
 extension ButtonStyle where Self == PrimaryButtonStyle {
     static var primary: PrimaryButtonStyle { PrimaryButtonStyle() }
 }
+
+// MARK: - Місце під плаваючу панель вкладок
+
+private struct TabBarInsetKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+extension EnvironmentValues {
+    /// Висота, яку займає плаваюча панель вкладок унизу екрана (0, коли її сховано).
+    var tabBarInset: CGFloat {
+        get { self[TabBarInsetKey.self] }
+        set { self[TabBarInsetKey.self] = newValue }
+    }
+}
+
+private struct TabBarSafeArea: ViewModifier {
+    @Environment(\.tabBarInset) private var inset
+
+    func body(content: Content) -> some View {
+        content.safeAreaPadding(.bottom, inset)
+    }
+}
+
+extension View {
+    /// Резервує місце під плаваючу панель вкладок. Застосовується до кореневого вмісту екрана
+    /// всередині NavigationStack — відступи, задані ззовні стека, до вмісту не доходять.
+    func tabBarSafeArea() -> some View {
+        modifier(TabBarSafeArea())
+    }
+}

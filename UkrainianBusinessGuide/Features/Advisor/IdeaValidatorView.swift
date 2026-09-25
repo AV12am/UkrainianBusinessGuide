@@ -47,7 +47,7 @@ struct IdeaValidatorView: View {
 
     private func scoreCard(_ evaluation: IdeaEvaluation) -> some View {
         HStack(spacing: 18) {
-            RingGauge(progress: Double(evaluation.score) / 100, lineWidth: 10) {
+            RingGauge(progress: Double(evaluation.score) / 100, lineWidth: 10, tint: Theme.color(forScore: Double(evaluation.score) / 100)) {
                 Text("\(evaluation.score)")
                     .font(.title2.weight(.heavy))
                     .contentTransition(.numericText())

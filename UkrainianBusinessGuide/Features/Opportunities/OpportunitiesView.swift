@@ -32,6 +32,7 @@ struct OpportunitiesView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 24)
             }
+            .tabBarSafeArea()
             .screenBackground()
             .navigationTitle("Можливості")
             .sheet(item: $selected) { opportunity in

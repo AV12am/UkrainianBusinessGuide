@@ -29,6 +29,7 @@ struct AdvisorView: View {
                 case .idea: IdeaValidatorView()
                 }
             }
+            .tabBarSafeArea()
             .background(AppBackground())
             .navigationTitle("Радник")
         }

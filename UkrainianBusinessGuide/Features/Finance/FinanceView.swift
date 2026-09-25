@@ -59,6 +59,7 @@ struct FinanceView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .tabBarSafeArea()
             .screenBackground()
             .navigationTitle("Фінанси")
             .toolbar {

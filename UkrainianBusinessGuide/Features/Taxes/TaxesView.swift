@@ -26,6 +26,7 @@ struct TaxesView: View {
                     .padding(.bottom, 24)
                 }
             }
+            .tabBarSafeArea()
             .screenBackground()
             .navigationTitle("Податки")
             .onAppear {
@@ -40,7 +41,7 @@ struct TaxesView: View {
         let limit = store.taxEngine.annualIncomeLimit(for: profile.fopGroup)
         let usage = store.limitUsage
         return HStack(spacing: 18) {
-            RingGauge(progress: usage, lineWidth: 12, colors: [Theme.mint, Theme.amber, Theme.coral]) {
+            RingGauge(progress: usage, lineWidth: 12, tint: usage >= 0.9 ? Theme.coral : (usage >= 0.7 ? Theme.amber : Theme.mint)) {
                 VStack(spacing: 0) {
                     Text(usage.percent).font(.headline.weight(.heavy))
                     Text("ліміту").font(.caption2).foregroundStyle(.secondary)

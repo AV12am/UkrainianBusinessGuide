@@ -52,16 +52,16 @@ struct ContentView: View {
 
     private var mainInterface: some View {
         // Усі вкладки живуть одночасно (зберігають стан), видно лише вибрану.
-        // Панель вкладок — це safeAreaInset, тож кожен екран отримує точний нижній відступ під неї.
-        ZStack {
+        // Кожен екран резервує місце під панель сам (`tabBarSafeArea()`), висота приходить через оточення.
+        ZStack(alignment: .bottom) {
             ForEach(AppTab.allCases) { tab in
                 page(for: tab)
                     .opacity(selectedTab == tab ? 1 : 0)
                     .allowsHitTesting(selectedTab == tab)
                     .accessibilityHidden(selectedTab != tab)
             }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .environment(\.tabBarInset, isKeyboardVisible ? 0 : FloatingTabBar.reservedHeight)
+
             if !isKeyboardVisible {
                 FloatingTabBar(selection: $selectedTab)
                     .padding(.horizontal, 16)
@@ -92,6 +92,9 @@ struct ContentView: View {
 
 /// Плаваюча скляна панель вкладок з анімованим індикатором.
 struct FloatingTabBar: View {
+    /// Висота панелі з відступом від низу — стільки місця резервують екрани.
+    static let reservedHeight: CGFloat = 76
+
     @Binding var selection: AppTab
     @Namespace private var indicator
 

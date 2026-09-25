@@ -9,7 +9,7 @@ import SwiftUI
 struct RingGauge<Label: View>: View {
     var progress: Double
     var lineWidth: CGFloat = 14
-    var colors: [Color] = [Theme.coral, Theme.amber, Theme.mint]
+    var tint: Color = Theme.mint
     @ViewBuilder var label: () -> Label
 
     @State private var animatedProgress: Double = 0
@@ -20,10 +20,7 @@ struct RingGauge<Label: View>: View {
                 .stroke(Color.primary.opacity(0.08), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: animatedProgress)
-                .stroke(
-                    AngularGradient(colors: colors, center: .center, startAngle: .degrees(0), endAngle: .degrees(360)),
-                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                )
+                .stroke(tint.gradient, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             label()
         }

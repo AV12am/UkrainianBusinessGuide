@@ -30,6 +30,7 @@ struct DashboardView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 24)
             }
+            .tabBarSafeArea()
             .screenBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -76,7 +77,7 @@ struct DashboardView: View {
 
     private func healthCard(_ report: HealthReport) -> some View {
         HStack(spacing: 20) {
-            RingGauge(progress: Double(report.score) / 100, lineWidth: 16) {
+            RingGauge(progress: Double(report.score) / 100, lineWidth: 16, tint: Theme.color(forScore: Double(report.score) / 100)) {
                 VStack(spacing: 0) {
                     Text("\(report.score)")
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
