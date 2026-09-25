@@ -9,13 +9,14 @@ struct OnboardingView: View {
     @Environment(AppStore.self) private var store
     @State private var step = 0
     @State private var draft = BusinessProfile.empty
+    @State private var showGuide = false
 
     private let stepsCount = 3
 
     var body: some View {
         VStack(spacing: 0) {
-            progress
-                .padding(.horizontal, 24)
+            header
+                .padding(.horizontal, Theme.gutter)
                 .padding(.top, 12)
 
             TabView(selection: $step) {
@@ -27,66 +28,109 @@ struct OnboardingView: View {
             .animation(.easeInOut, value: step)
 
             controls
-                .padding(24)
+                .padding(Theme.gutter)
         }
-        .background(AppBackground())
+        .background(Theme.paper.ignoresSafeArea())
+        .sheet(isPresented: $showGuide) { StartupGuideSheet() }
     }
 
     // MARK: - Кроки
 
-    private var progress: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<stepsCount, id: \.self) { index in
-                Capsule()
-                    .fill(index <= step ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.primary.opacity(0.1)))
-                    .frame(height: 5)
-            }
+    private var header: some View {
+        HStack {
+            Text("Бізнес Компас")
+                .font(.display(17))
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            Text("\(step + 1) / \(stepsCount)")
+                .font(.footnote)
+                .monospacedDigit()
+                .foregroundStyle(Theme.inkMuted)
         }
     }
 
     private var welcome: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                ZStack {
-                    Circle().fill(Theme.flag).frame(width: 120, height: 120)
-                        .blur(radius: 30).opacity(0.7)
-                    Image(systemName: "safari.fill")
-                        .font(.system(size: 72, weight: .bold))
-                        .foregroundStyle(Theme.flag)
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Скільки заробили, скільки платити і коли.")
+                        .font(.display(38, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Записуйте доходи й витрати. Податки, строки сплати й прогноз прибутку застосунок порахує сам.")
+                        .font(.body)
+                        .foregroundStyle(Theme.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 40)
+                .padding(.top, 36)
 
-                Text("Бізнес Компас")
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
-                Text("Персональний фінансовий директор, бухгалтер-нагадувач і бізнес-радник для ФОП — у кишені.")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 16) {
-                    feature("waveform.path.ecg", Theme.mint, "Пульс бізнесу", "Індекс здоров'я 0–100 з поясненнями")
-                    feature("building.columns.fill", Theme.skyBlue, "Податки без стресу", "Калькулятор ФОП, ліміти та календар строків")
-                    feature("slider.horizontal.3", Theme.violet, "Симулятор «Що якщо»", "Змоделюйте ціни, найм і витрати до рішення")
-                    feature("sparkles", Theme.amber, "Гранти під вас", "Підбір програм з відсотком збігу")
+                VStack(alignment: .leading, spacing: 0) {
+                    Rule(color: Theme.ink.opacity(0.85))
+                    feature("1", "Стан бізнесу", "Скільки грошей, яка маржа, чи росте виручка і чи немає податкових ризиків.")
+                    feature("2", "Податки ФОП", "Єдиний податок, військовий збір і ЄСВ. Нагадування про строки й контроль ліміту групи.")
+                    feature("3", "Що якщо", "Перш ніж підняти ціни чи найняти людину, подивіться, що буде з прибутком.")
+                    feature("4", "Програми підтримки", "Гранти й пільгові кредити, на які ваш бізнес може претендувати.")
                 }
-                .glassCard()
+
+                Button {
+                    showGuide = true
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Плануєте відкрити свою справу?")
+                                .font(.display(20))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "arrow.right").foregroundStyle(Theme.accent)
+                        }
+                        Text("Ще не маєте ФОП? Покажемо всі кроки від реєстрації до першої сплати податків.")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.inkMuted)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous).strokeBorder(Theme.rule))
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 16)
             }
-            .padding(24)
+            .padding(.horizontal, Theme.gutter)
+        }
+    }
+
+    private func feature(_ number: String, _ title: String, _ text: String) -> some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                Text(number)
+                    .font(.display(15))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.accent)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.body.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text(text).font(.subheadline).foregroundStyle(Theme.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 14)
+            Rule()
         }
     }
 
     private var businessStep: some View {
         Form {
-            Section("Про вас") {
+            Section {
                 TextField("Ваше ім'я", text: $draft.ownerName)
                     .textContentType(.givenName)
                 TextField("Назва бізнесу", text: $draft.businessName)
+            } header: {
+                stepTitle("Про вас")
             }
             Section("Галузь") {
                 Picker("Галузь", selection: $draft.industry) {
-                    ForEach(Industry.allCases) { industry in
-                        Label(industry.title, systemImage: industry.icon).tag(industry)
-                    }
+                    ForEach(Industry.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.menu)
             }
@@ -103,7 +147,7 @@ struct OnboardingView: View {
             } footer: {
                 Text(draft.fopGroup.subtitle)
             }
-            Section("Особливі статуси (для підбору грантів)") {
+            Section("Особливі статуси (для підбору програм)") {
                 ForEach(FounderStatus.allCases) { status in
                     Toggle(status.title, isOn: Binding(
                         get: { draft.statuses.contains(status) },
@@ -114,7 +158,7 @@ struct OnboardingView: View {
                 }
             }
         }
-        .scrollContentBackground(.hidden)
+        .screenBackground()
     }
 
     private var financeStep: some View {
@@ -125,42 +169,42 @@ struct OnboardingView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                 }
-                LabeledContent("Постійні витрати / міс") {
+                LabeledContent("Постійні витрати на місяць") {
                     TextField("0", value: $draft.monthlyFixedCosts, format: .number)
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                 }
                 Stepper("Працівників: \(draft.employees)", value: $draft.employees, in: 0...500)
             } header: {
-                Text("Стартові цифри, ₴")
+                stepTitle("Стартові цифри, ₴")
             } footer: {
-                Text("Дані зберігаються лише на вашому пристрої. Їх можна змінити будь-коли в налаштуваннях.")
+                Text("Дані зберігаються лише на цьому пристрої. Змінити їх можна в налаштуваннях.")
             }
 
             Section {
-                Button {
+                Button("Відкрити з прикладом: кав'ярня «Зерно»") {
                     store.loadDemo()
-                } label: {
-                    Label("Переглянути з демо-даними кав'ярні", systemImage: "cup.and.saucer.fill")
                 }
+            } footer: {
+                Text("Шість місяців вигаданих операцій, щоб побачити всі розділи з даними.")
             }
         }
-        .scrollContentBackground(.hidden)
+        .screenBackground()
+    }
+
+    private func stepTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.display(26, weight: .bold))
+            .foregroundStyle(Theme.ink)
+            .textCase(nil)
+            .padding(.bottom, 6)
     }
 
     private var controls: some View {
         HStack(spacing: 12) {
             if step > 0 {
-                Button {
-                    step -= 1
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .frame(width: 54, height: 54)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Назад")
+                Button("Назад") { step -= 1 }
+                    .buttonStyle(.outline)
             }
             Button(step == stepsCount - 1 ? "Почати" : "Далі") {
                 if step < stepsCount - 1 {
@@ -175,16 +219,6 @@ struct OnboardingView: View {
                 }
             }
             .buttonStyle(.primary)
-        }
-    }
-
-    private func feature(_ icon: String, _ tint: Color, _ title: String, _ subtitle: String) -> some View {
-        HStack(spacing: 14) {
-            IconBadge(systemName: icon, tint: tint, size: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
-            }
         }
     }
 }

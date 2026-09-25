@@ -2,7 +2,7 @@
 //  HealthAnalyzer.swift
 //  UkrainianBusinessGuide
 //
-//  «Пульс бізнесу» — інтегральний індекс 0–100 з пояснюваними складовими та порадами.
+//  «Стан бізнесу» — інтегральний індекс 0–100 з пояснюваними складовими та порадами.
 //
 
 import Foundation
@@ -94,14 +94,18 @@ enum HealthAnalyzer {
         }
 
         // 3. Динаміка виручки
+        // Без доходу за попередні 30 днів порівнювати нема з чим: не показуємо «+100%».
         let growth: Double
+        let growthDetail: String
         if input.incomePrevious30Days > 0 {
             growth = (input.incomeLast30Days - input.incomePrevious30Days) / input.incomePrevious30Days
+            growthDetail = (growth >= 0 ? "+" : "") + growth.percent
         } else {
-            growth = input.incomeLast30Days > 0 ? 1 : 0
+            growth = 0
+            growthDetail = "Мало даних для порівняння"
         }
         let growthScore = min(1, max(0, 0.5 + growth))
-        components.append(HealthComponent(title: "Динаміка", icon: "arrow.up.right", value: growthScore, detail: (growth >= 0 ? "+" : "") + growth.percent))
+        components.append(HealthComponent(title: "Динаміка", icon: "arrow.up.right", value: growthScore, detail: growthDetail))
         if growth > 0.15 {
             insights.append(Insight(id: "growth", icon: "flame.fill", title: "Виручка зростає",
                                     message: "Дохід за 30 днів вищий на \(growth.percent). Час інвестувати в канал, що дає цей ріст.",
@@ -137,7 +141,7 @@ enum HealthAnalyzer {
 
         if insights.isEmpty {
             insights.append(Insight(id: "ok", icon: "sparkles", title: "Все під контролем",
-                                    message: "Додайте ще кілька операцій — і аналітика стане точнішою.", severity: .info))
+                                    message: "Що більше операцій ви додасте, то точнішими будуть розрахунки.", severity: .info))
         }
 
         return HealthReport(score: score, components: components, insights: insights.sorted { $0.severity > $1.severity })

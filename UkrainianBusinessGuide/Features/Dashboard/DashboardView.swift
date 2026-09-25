@@ -2,9 +2,10 @@
 //  DashboardView.swift
 //  UkrainianBusinessGuide
 //
-//  «Пульс бізнесу»: індекс здоров'я, ключові метрики, найближчі строки та інсайти.
+//  «Огляд»: зведення цифр, стан бізнесу, найближчі строки й нотатки.
 //
 
+import Charts
 import SwiftUI
 
 struct DashboardView: View {
@@ -14,21 +15,24 @@ struct DashboardView: View {
     @State private var showSimulator = false
     @State private var showSettings = false
     @State private var showAddTransaction = false
+    @State private var showInvoices = false
 
     var body: some View {
         NavigationStack {
             let report = store.healthReport
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 36) {
                     header
-                    healthCard(report)
-                    metrics
-                    quickActions
+                    summary
+                    actions
+                    health(report)
                     deadlines
-                    insights(report)
+                    if !store.transactions.isEmpty {
+                        notes(report)
+                    }
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.bottom, 32)
             }
             .screenBackground()
             .toolbar {
@@ -37,159 +41,203 @@ struct DashboardView: View {
                         showSettings = true
                     } label: {
                         Image(systemName: "person.crop.circle")
-                            .font(.title3)
                     }
+                    .tint(Theme.ink)
                     .accessibilityLabel("Профіль і налаштування")
                 }
             }
             .sheet(isPresented: $showSimulator) { ScenarioSimulatorView() }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showAddTransaction) { AddTransactionView() }
+            .sheet(isPresented: $showInvoices) { InvoicesView() }
         }
     }
 
-    // MARK: - Секції
-
-    private var greeting: String {
-        switch Calendar.kyiv.component(.hour, from: .now) {
-        case 5..<12: return "Доброго ранку"
-        case 12..<18: return "Добрий день"
-        default: return "Добрий вечір"
-        }
-    }
+    // MARK: - Шапка
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)).capitalized)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-            Text(store.profile.map { "\(greeting), \($0.ownerName.isEmpty ? "підприємцю" : $0.ownerName)" } ?? greeting)
-                .font(.system(.largeTitle, design: .rounded, weight: .heavy))
-            if let name = store.profile?.businessName {
-                Text(name)
-                    .font(.headline)
-                    .foregroundStyle(Theme.brand)
+        VStack(alignment: .leading, spacing: 6) {
+            Eyebrow(Date.now.formatted(Date.FormatStyle.kyiv.weekday(.wide).day().month(.wide)).capitalizedFirstLetter)
+            Text(store.profile?.businessName ?? "Мій бізнес")
+                .font(.display(34, weight: .bold))
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let profile = store.profile {
+                Text([profile.ownerName, "ФОП \(profile.fopGroup.title)", profile.industry.title]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: ", "))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkMuted)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
-    private func healthCard(_ report: HealthReport) -> some View {
-        HStack(spacing: 20) {
-            RingGauge(progress: Double(report.score) / 100, lineWidth: 16) {
-                VStack(spacing: 0) {
-                    Text("\(report.score)")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
-                        .contentTransition(.numericText())
-                    Text("зі 100")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(width: 124, height: 124)
+    // MARK: - Зведення
 
-            VStack(alignment: .leading, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Пульс бізнесу")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                    Text(report.verdict)
-                        .font(.title3.weight(.bold))
-                }
-                ForEach(report.components) { component in
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack {
-                            Text(component.title)
-                            Spacer()
-                            Text(component.detail).foregroundStyle(.secondary)
-                        }
-                        .font(.caption)
-                        ProgressBar(value: component.value, height: 5)
-                    }
-                }
-            }
-        }
-        .glassCard(padding: 20)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Пульс бізнесу \(report.score) зі 100, \(report.verdict)")
-    }
-
-    private var metrics: some View {
+    private var summary: some View {
         let month = store.monthlySummaries(months: 1).first
         let runway = HealthAnalyzer.runwayMonths(cash: store.cashBalance, monthlyIncome: store.averageMonthlyIncome, monthlyExpense: store.averageMonthlyExpense)
         let limitLeft = store.profile.map { store.taxEngine.annualIncomeLimit(for: $0.fopGroup) - store.yearIncome } ?? 0
+        let monthName = month.map { $0.month.monthName } ?? "місяць"
+        let profit = month?.profit ?? 0
 
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-            MetricTile(title: "Гроші на рахунку", value: store.cashBalance.uahCompact, icon: "creditcard.fill",
-                       tint: store.cashBalance >= 0 ? Theme.skyBlue : Theme.coral)
-            MetricTile(title: "Прибуток цього місяця", value: (month?.profit ?? 0).uahCompact, icon: "chart.line.uptrend.xyaxis",
-                       tint: (month?.profit ?? 0) >= 0 ? Theme.mint : Theme.coral,
-                       footnote: month.map { "Дохід \($0.income.uahCompact)" })
-            MetricTile(title: "Запас міцності", value: runway.map { String(format: "%.1f міс", $0) } ?? "∞", icon: "hourglass",
-                       tint: Theme.violet, footnote: runway == nil ? "Бізнес прибутковий" : nil)
-            MetricTile(title: "До ліміту групи", value: max(0, limitLeft).uahCompact, icon: "gauge.with.dots.needle.33percent",
-                       tint: store.limitUsage > 0.8 ? Theme.amber : Theme.blue, footnote: "Використано \(store.limitUsage.percent)")
+        return VStack(alignment: .leading, spacing: 0) {
+            Eyebrow("На рахунку")
+            Text(store.cashBalance.uah)
+                .font(.display(44, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(Theme.color(forAmount: store.cashBalance))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .contentTransition(.numericText())
+                .padding(.top, 4)
+                .padding(.bottom, 16)
+
+            Rule(color: Theme.ink.opacity(0.85))
+            LedgerRow(label: "Прибуток, \(monthName)",
+                      value: (profit >= 0 ? "+" : "−") + abs(profit).uah,
+                      valueColor: profit >= 0 ? Theme.positive : Theme.negative)
+            LedgerRow(label: "Дохід, \(monthName)", value: (month?.income ?? 0).uah)
+            LedgerRow(label: "Запас міцності",
+                      value: runway.map { String(format: "%.1f міс.", $0) } ?? "—",
+                      detail: runway == nil ? "Доходи покривають витрати" : "Скільки місяців протримаєтесь без доходу")
+            LedgerRow(label: "До ліміту групи", value: max(0, limitLeft).uahCompact,
+                      detail: "Використано \(store.limitUsage.percent) річного ліміту")
+            LedgerRow(label: "Відкласти на податки", value: store.taxReserve.uah,
+                      detail: reserveDetail)
+            if store.receivables > 0 {
+                LedgerRow(label: "Вам винні клієнти", value: store.receivables.uah,
+                          detail: store.overdueInvoices.isEmpty ? "За неоплаченими рахунками" : "Є прострочені рахунки",
+                          valueColor: store.overdueInvoices.isEmpty ? Theme.ink : Theme.negative)
+            }
+
+            incomeSparkline
+                .padding(.top, 16)
         }
     }
 
-    private var quickActions: some View {
+    private var reserveDetail: String {
+        if let rate = store.reserveRate {
+            return "Несплачені податки на 60 днів. З кожного доходу відкладайте \(rate.percent)"
+        }
+        return "Несплачені податки на найближчі 60 днів"
+    }
+
+    private var incomeSparkline: some View {
+        let summaries = store.monthlySummaries(months: 6)
+        return VStack(alignment: .leading, spacing: 6) {
+            Chart(summaries) { summary in
+                BarMark(
+                    x: .value("Місяць", summary.month, unit: .month),
+                    y: .value("Дохід", summary.income),
+                    width: .ratio(0.28)
+                )
+                .foregroundStyle(summary.id == summaries.last?.id ? Theme.accent : Theme.ink.opacity(0.18))
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .frame(height: 56)
+            Text("Дохід за останні 6 місяців")
+                .font(.caption)
+                .foregroundStyle(Theme.inkMuted)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Графік доходу за останні 6 місяців")
+    }
+
+    // MARK: - Дії
+
+    private var actions: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                quickAction("Операція", "plus.circle.fill", Theme.brand) { showAddTransaction = true }
-                quickAction("Що якщо?", "slider.horizontal.3", LinearGradient(colors: [Theme.violet, Theme.skyBlue], startPoint: .topLeading, endPoint: .bottomTrailing)) { showSimulator = true }
-                quickAction("Гранти", "gift.fill", Theme.sun) { selectedTab = .opportunities }
-                quickAction("Спитати", "bubble.left.fill", LinearGradient(colors: [Theme.mint, Theme.skyBlue], startPoint: .topLeading, endPoint: .bottomTrailing)) { selectedTab = .advisor }
+            HStack(spacing: 8) {
+                Button("Нова операція") { showAddTransaction = true }
+                Button("Рахунки") { showInvoices = true }
+                Button("Що якщо?") { showSimulator = true }
+                Button("Податки") { selectedTab = .taxes }
+                Button("Запитати радника") { selectedTab = .advisor }
             }
-            .padding(.vertical, 4)
+            .buttonStyle(.outline)
         }
     }
 
-    private func quickAction(_ title: String, _ icon: String, _ gradient: LinearGradient, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
+    // MARK: - Стан бізнесу
+
+    @ViewBuilder
+    private func health(_ report: HealthReport) -> some View {
+        if store.transactions.isEmpty {
+            // Без жодної операції оцінка була б «зоною ризику», хоча насправді даних просто немає.
+            LedgerSection(title: "Стан бізнесу") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Оцінка з'явиться після перших операцій. Внесіть доходи й витрати вручну або імпортуйте виписку з банку.")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Нова операція") { showAddTransaction = true }
+                        .buttonStyle(.outline)
+                }
+                .padding(.vertical, 14)
             }
-            .frame(width: 76)
+        } else {
+            scoredHealth(report)
         }
-        .buttonStyle(.plain)
     }
+
+    private func scoredHealth(_ report: HealthReport) -> some View {
+        LedgerSection(title: "Стан бізнесу") {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(report.score)")
+                    .font(.display(56, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.ink)
+                    .contentTransition(.numericText())
+                Text("зі 100. \(report.verdict).")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkMuted)
+            }
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+            .accessibilityElement(children: .combine)
+
+            ForEach(report.components) { component in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(component.title).font(.body).foregroundStyle(Theme.ink)
+                        Spacer()
+                        Text(component.detail)
+                            .font(.subheadline)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkMuted)
+                    }
+                    Meter(value: component.value, tint: Theme.color(forScore: component.value), height: 3)
+                }
+                .padding(.vertical, 12)
+                Rule()
+            }
+        }
+    }
+
+    // MARK: - Строки
 
     private var deadlines: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Найближчі строки", action: (title: "Усі", handler: { selectedTab = .taxes }))
-            let upcoming = Array(store.upcomingDeadlines.prefix(3))
+        let upcoming = Array(store.upcomingDeadlines.prefix(3))
+        return LedgerSection(title: "Найближчі строки", actionTitle: "Усі", action: { selectedTab = .taxes }) {
             if upcoming.isEmpty {
-                Text("Найближчим часом платежів немає 🎉")
-                    .foregroundStyle(.secondary)
-                    .glassCard()
+                EmptyNote(text: "Найближчим часом платежів немає.")
             } else {
-                VStack(spacing: 14) {
-                    ForEach(upcoming) { deadline in
-                        DeadlineRow(deadline: deadline)
-                        if deadline.id != upcoming.last?.id { Divider() }
-                    }
-                }
-                .glassCard()
+                ForEach(upcoming) { DeadlineRow(deadline: $0) }
             }
         }
     }
 
-    private func insights(_ report: HealthReport) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Інсайти")
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(report.insights) { InsightRow(insight: $0) }
+    // MARK: - Нотатки
+
+    private func notes(_ report: HealthReport) -> some View {
+        LedgerSection(title: "Нотатки") {
+            ForEach(report.insights) { insight in
+                InsightRow(insight: insight)
+                Rule()
             }
-            .glassCard()
         }
     }
 }

@@ -12,28 +12,37 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .dashboard: return "Пульс"
+        case .dashboard: return "Огляд"
         case .finance: return "Фінанси"
         case .taxes: return "Податки"
-        case .opportunities: return "Можливості"
+        case .opportunities: return "Підтримка"
         case .advisor: return "Радник"
         }
     }
 
     var icon: String {
         switch self {
-        case .dashboard: return "waveform.path.ecg"
-        case .finance: return "chart.bar.xaxis"
+        case .dashboard: return "square.text.square"
+        case .finance: return "chart.bar"
         case .taxes: return "building.columns"
-        case .opportunities: return "sparkles"
-        case .advisor: return "bubble.left.and.text.bubble.right"
+        case .opportunities: return "doc.text.magnifyingglass"
+        case .advisor: return "text.bubble"
         }
     }
 }
 
+/// Екрани, які CI відкриває аргументом `-uiScreen` для скриншотів.
+enum DebugScreen: String, Identifiable {
+    case invoices, invoice, importer = "import", declaration
+
+    var id: String { rawValue }
+}
+
 struct ContentView: View {
     @Environment(AppStore.self) private var store
-    @State private var selectedTab: AppTab = .dashboard
+    /// `-uiTab finance` у аргументах запуску відкриває потрібну вкладку (для скриншотів у CI).
+    @State private var selectedTab: AppTab = AppTab(rawValue: UserDefaults.standard.string(forKey: "uiTab") ?? "") ?? .dashboard
+    @State private var debugScreen = DebugScreen(rawValue: UserDefaults.standard.string(forKey: "uiScreen") ?? "")
 
     var body: some View {
         Group {
@@ -42,88 +51,47 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 mainInterface
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: store.profile == nil)
+        .animation(.easeInOut(duration: 0.3), value: store.profile == nil)
     }
 
     private var mainInterface: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                DashboardView(selectedTab: $selectedTab)
-                    .tabPage(.dashboard)
-                FinanceView()
-                    .tabPage(.finance)
-                TaxesView()
-                    .tabPage(.taxes)
-                OpportunitiesView()
-                    .tabPage(.opportunities)
-                AdvisorView()
-                    .tabPage(.advisor)
-            }
-
-            FloatingTabBar(selection: $selectedTab)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-                .ignoresSafeArea(.keyboard)
+        TabView(selection: $selectedTab) {
+            DashboardView(selectedTab: $selectedTab)
+                .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
+                .tag(AppTab.dashboard)
+            FinanceView()
+                .tabItem { Label(AppTab.finance.title, systemImage: AppTab.finance.icon) }
+                .tag(AppTab.finance)
+            TaxesView()
+                .tabItem { Label(AppTab.taxes.title, systemImage: AppTab.taxes.icon) }
+                .tag(AppTab.taxes)
+            OpportunitiesView()
+                .tabItem { Label(AppTab.opportunities.title, systemImage: AppTab.opportunities.icon) }
+                .tag(AppTab.opportunities)
+            AdvisorView()
+                .tabItem { Label(AppTab.advisor.title, systemImage: AppTab.advisor.icon) }
+                .tag(AppTab.advisor)
         }
-    }
-}
-
-private extension View {
-    /// Ховає системну панель вкладок і резервує місце під плаваючу.
-    func tabPage(_ tab: AppTab) -> some View {
-        self
-            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 64) }
-            .toolbar(.hidden, for: .tabBar)
-            .tag(tab)
-    }
-}
-
-/// Плаваюча скляна панель вкладок з анімованим індикатором.
-struct FloatingTabBar: View {
-    @Binding var selection: AppTab
-    @Namespace private var indicator
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(AppTab.allCases) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        selection = tab
-                    }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 18, weight: .semibold))
-                            .symbolEffect(.bounce, value: selection == tab)
-                        Text(tab.title)
-                            .font(.system(size: 10, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .foregroundStyle(selection == tab ? Color.white : Color.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background {
-                        if selection == tab {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Theme.brand)
-                                .matchedGeometryEffect(id: "indicator", in: indicator)
-                        }
+        .sensoryFeedback(.selection, trigger: selectedTab)
+        .sheet(item: $debugScreen) { screen in
+            switch screen {
+            case .invoices:
+                InvoicesView()
+            case .invoice:
+                NavigationStack {
+                    if let first = store.invoices.first {
+                        InvoiceDetailView(invoiceID: first.id)
                     }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(tab.title)
-                .accessibilityAddTraits(selection == tab ? .isSelected : [])
+            case .importer:
+                ImportView()
+            case .declaration:
+                NavigationStack { DeclarationView() }
             }
         }
-        .padding(6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.2)))
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
-        .sensoryFeedback(.selection, trigger: selection)
     }
 }
 

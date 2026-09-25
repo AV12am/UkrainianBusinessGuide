@@ -113,6 +113,32 @@ final class AnalyticsTests: XCTestCase {
         XCTAssertGreaterThan(with, without)
     }
 
+    func testClosedProgramsRankLastWithZeroMatch() {
+        let profile = BusinessProfile.empty
+        let afterDeadline = Calendar.kyiv.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        let ranked = OpportunityCatalog.ranked(for: profile, on: afterDeadline)
+        let closed = ranked.filter { !$0.opportunity.isOpen(on: afterDeadline) }
+        XCTAssertFalse(closed.isEmpty)
+        XCTAssertTrue(closed.allSatisfy { $0.match == 0 })
+        XCTAssertFalse(ranked.last!.opportunity.isOpen(on: afterDeadline))
+    }
+
+    func testFormsFilteredByGroup() {
+        var profile = BusinessProfile.empty
+        profile.fopGroup = .first
+        let firstGroupForms = FormsCatalog.forms(for: profile).map(\.id)
+        XCTAssertTrue(firstGroupForms.contains("declaration-12"))
+        XCTAssertFalse(firstGroupForms.contains("declaration-3"))
+        XCTAssertFalse(firstGroupForms.contains("prro"))
+        profile.fopGroup = .third
+        XCTAssertTrue(FormsCatalog.forms(for: profile).map(\.id).contains("declaration-3"))
+    }
+
+    func testGuideStepIdsAreUnique() {
+        let ids = StartupGuide.steps.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count)
+    }
+
     func testStoreDerivedValues() {
         let store = AppStore(fileURL: nil)
         store.loadDemo()

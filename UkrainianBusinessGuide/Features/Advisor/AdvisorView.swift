@@ -7,12 +7,15 @@ import SwiftUI
 
 struct AdvisorView: View {
     enum Mode: String, CaseIterable, Identifiable {
-        case chat = "Чат"
-        case idea = "Валідатор ідей"
+        case chat = "Питання"
+        case forms = "Документи"
+        case start = "Відкриття"
+        case idea = "Ідея"
         var id: String { rawValue }
     }
 
-    @State private var mode: Mode = .chat
+    /// `-uiAdvisorMode Документи` у аргументах запуску відкриває потрібний розділ (для скриншотів у CI).
+    @State private var mode: Mode = Mode(rawValue: UserDefaults.standard.string(forKey: "uiAdvisorMode") ?? "") ?? .chat
 
     var body: some View {
         NavigationStack {
@@ -21,15 +24,17 @@ struct AdvisorView: View {
                     ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.bottom, 8)
 
                 switch mode {
                 case .chat: AdvisorChatView()
+                case .forms: FormsView()
+                case .start: StartupGuideView()
                 case .idea: IdeaValidatorView()
                 }
             }
-            .background(AppBackground())
+            .background(Theme.paper.ignoresSafeArea())
             .navigationTitle("Радник")
         }
     }
@@ -38,7 +43,7 @@ struct AdvisorView: View {
 struct AdvisorChatView: View {
     @Environment(AppStore.self) private var store
     @State private var messages: [AdvisorMessage] = [
-        AdvisorMessage(role: .advisor, text: "Привіт! Я ваш бізнес-радник. Знаю ваші цифри й податкові правила ФОП — питайте про податки, строки, групу, найм чи фінансування.")
+        AdvisorMessage(role: .advisor, text: "Питайте про податки, строки сплати, вибір групи, найм чи фінансування. Відповіді враховують цифри вашого бізнесу.")
     ]
     @State private var draft = ""
     @State private var isThinking = false
@@ -50,19 +55,21 @@ struct AdvisorChatView: View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(alignment: .leading, spacing: 18) {
                         ForEach(messages) { message in
-                            MessageBubble(message: message)
+                            MessageView(message: message)
                                 .id(message.id)
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                                .transition(.opacity)
                         }
                         if isThinking {
-                            TypingIndicator()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .id("typing")
+                            Text("Радник рахує…")
+                                .font(.footnote)
+                                .foregroundStyle(Theme.inkMuted)
+                                .id("thinking")
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, Theme.gutter)
+                    .padding(.vertical, 12)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onChange(of: messages.count) {
@@ -71,6 +78,7 @@ struct AdvisorChatView: View {
                 }
             }
 
+            Rule()
             suggestions
             inputBar
         }
@@ -81,41 +89,38 @@ struct AdvisorChatView: View {
             HStack(spacing: 8) {
                 ForEach(LocalAdvisor.suggestions, id: \.self) { suggestion in
                     Button(suggestion) { send(suggestion) }
-                        .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .buttonStyle(.plain)
+                        .buttonStyle(.outline)
                 }
             }
-            .padding(.horizontal)
-            .padding(.vertical, 6)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.vertical, 10)
         }
     }
 
     private var inputBar: some View {
-        HStack(spacing: 10) {
-            TextField("Запитайте щось…", text: $draft, axis: .vertical)
+        HStack(alignment: .bottom, spacing: 10) {
+            TextField("Ваше питання", text: $draft, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(.vertical, 11)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous).strokeBorder(Theme.rule))
                 .onSubmit { send(draft) }
             Button {
                 send(draft)
             } label: {
                 Image(systemName: "arrow.up")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(Theme.brand, in: Circle())
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.paper)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.ink, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
             }
             .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isThinking)
             .accessibilityLabel("Надіслати")
         }
-        .padding(.horizontal)
-        .padding(.bottom, 8)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.bottom, 10)
     }
 
     @MainActor
@@ -123,14 +128,14 @@ struct AdvisorChatView: View {
         let question = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, !isThinking, let context = store.advisorContext else { return }
         draft = ""
-        withAnimation(.spring) {
+        withAnimation {
             messages.append(AdvisorMessage(role: .user, text: question))
             isThinking = true
         }
         Task {
-            try? await Task.sleep(for: .milliseconds(600))
+            try? await Task.sleep(for: .milliseconds(500))
             let answer = await advisor.reply(to: question, context: context)
-            withAnimation(.spring) {
+            withAnimation {
                 isThinking = false
                 messages.append(AdvisorMessage(role: .advisor, text: answer))
             }
@@ -138,55 +143,32 @@ struct AdvisorChatView: View {
     }
 }
 
-struct MessageBubble: View {
+/// Відповідь радника — звичайний текст на папері; питання користувача — у рамці праворуч.
+struct MessageView: View {
     let message: AdvisorMessage
 
-    private var isUser: Bool { message.role == .user }
-
     var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            if isUser { Spacer(minLength: 48) } else {
-                IconBadge(systemName: "safari.fill", tint: Theme.blue, size: 30)
+        switch message.role {
+        case .advisor:
+            VStack(alignment: .leading, spacing: 6) {
+                Eyebrow("Радник", color: Theme.accent)
+                Text(message.text)
+                    .font(.body)
+                    .foregroundStyle(Theme.ink)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(message.text)
-                .font(.subheadline)
-                .foregroundStyle(isUser ? Color.white : Color.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background {
-                    if isUser {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.brand)
-                    } else {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.regularMaterial)
-                    }
-                }
-                .textSelection(.enabled)
-            if !isUser { Spacer(minLength: 32) }
-        }
-    }
-}
-
-struct TypingIndicator: View {
-    @State private var phase = 0.0
-
-    var body: some View {
-        HStack(spacing: 5) {
-            ForEach(0..<3) { index in
-                Circle()
-                    .fill(Theme.skyBlue)
-                    .frame(width: 8, height: 8)
-                    .scaleEffect(phase == Double(index) ? 1.3 : 0.8)
-                    .opacity(phase == Double(index) ? 1 : 0.5)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(.regularMaterial, in: Capsule())
-        .padding(.leading, 38)
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(250))
-                withAnimation(.easeInOut(duration: 0.25)) { phase = (phase + 1).truncatingRemainder(dividingBy: 3) }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        case .user:
+            HStack {
+                Spacer(minLength: 56)
+                Text(message.text)
+                    .font(.body)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous).strokeBorder(Theme.rule))
             }
         }
     }

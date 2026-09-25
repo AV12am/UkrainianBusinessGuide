@@ -12,91 +12,94 @@ struct IdeaValidatorView: View {
     var body: some View {
         let evaluation = IdeaValidator.evaluate(ratings)
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                TextField("Опишіть ідею одним реченням", text: $idea, axis: .vertical)
-                    .lineLimit(2...4)
-                    .glassCard()
+            VStack(alignment: .leading, spacing: 32) {
+                TextField("Ідея одним реченням", text: $idea, axis: .vertical)
+                    .font(.display(22))
+                    .lineLimit(1...4)
+                    .padding(.vertical, 8)
+                    .overlay(alignment: .bottom) { Rule(color: Theme.ink.opacity(0.85)) }
 
-                scoreCard(evaluation)
+                score(evaluation)
 
-                ForEach(IdeaCriterion.allCases) { criterion in
-                    criterionRow(criterion)
+                LedgerSection(title: "Оцініть від 1 до 5") {
+                    ForEach(IdeaCriterion.allCases) { criterion in
+                        criterionRow(criterion)
+                    }
                 }
 
                 if !evaluation.weakest.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Що посилити").font(.headline)
+                    LedgerSection(title: "Що посилити") {
                         ForEach(evaluation.weakest) { criterion in
-                            HStack(alignment: .top, spacing: 12) {
-                                IconBadge(systemName: criterion.icon, tint: Theme.amber, size: 34)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(criterion.title).font(.subheadline.weight(.semibold))
-                                    Text(criterion.advice).font(.footnote).foregroundStyle(.secondary)
-                                }
-                            }
+                            InsightRow(insight: Insight(id: criterion.id, icon: "", title: criterion.title,
+                                                        message: criterion.advice, severity: .warning))
+                            Rule()
                         }
                     }
-                    .glassCard()
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.vertical, 12)
         }
         .scrollDismissesKeyboard(.interactively)
     }
 
-    private func scoreCard(_ evaluation: IdeaEvaluation) -> some View {
-        HStack(spacing: 18) {
-            RingGauge(progress: Double(evaluation.score) / 100, lineWidth: 10) {
+    private func score(_ evaluation: IdeaEvaluation) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(evaluation.score)")
-                    .font(.title2.weight(.heavy))
+                    .font(.display(56, weight: .bold))
+                    .monospacedDigit()
                     .contentTransition(.numericText())
+                Text("зі 100")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.inkMuted)
             }
-            .frame(width: 80, height: 80)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(idea.isEmpty ? "Потенціал ідеї" : idea)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Text(evaluation.verdict)
-                    .font(.headline)
-            }
+            Text(evaluation.verdict)
+                .font(.body)
+                .foregroundStyle(Theme.ink)
+            Meter(value: Double(evaluation.score) / 100, tint: Theme.color(forScore: Double(evaluation.score) / 100), height: 3)
+                .padding(.top, 6)
         }
-        .glassCard()
-        .animation(.spring, value: evaluation)
+        .animation(.easeOut(duration: 0.25), value: evaluation)
     }
 
     private func criterionRow(_ criterion: IdeaCriterion) -> some View {
         let value = ratings[criterion] ?? 3
         return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(criterion.title, systemImage: criterion.icon)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(value)/5")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Theme.color(forScore: Double(value - 1) / 4))
-            }
+            Text(criterion.title)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Theme.ink)
             Text(criterion.question)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
+                .font(.subheadline)
+                .foregroundStyle(Theme.inkMuted)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 6) {
                 ForEach(1...5, id: \.self) { rating in
+                    let isFilled = rating <= value
                     Button {
-                        withAnimation(.spring(response: 0.3)) { ratings[criterion] = rating }
+                        withAnimation(.easeOut(duration: 0.15)) { ratings[criterion] = rating }
                     } label: {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(rating <= value ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.primary.opacity(0.08)))
-                            .frame(height: 30)
-                            .overlay(Text("\(rating)").font(.caption.weight(.bold))
-                                .foregroundStyle(rating <= value ? Color.white : Color.secondary))
+                        Text("\(rating)")
+                            .font(.subheadline.weight(.medium))
+                            .monospacedDigit()
+                            .foregroundStyle(isFilled ? Theme.paper : Theme.inkMuted)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 34)
+                            .background {
+                                if isFilled {
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.ink)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.rule)
+                                }
+                            }
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(criterion.title): \(rating) з 5")
                 }
             }
         }
-        .glassCard()
+        .padding(.vertical, 14)
+        .overlay(alignment: .bottom) { Rule() }
         .sensoryFeedback(.selection, trigger: value)
     }
 }
