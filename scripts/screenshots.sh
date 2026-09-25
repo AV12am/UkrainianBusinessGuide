@@ -24,6 +24,9 @@ shot() {
 }
 
 xcrun simctl ui "$UDID" appearance light
+# Прогрів після встановлення: перший запуск повільний, і заставка ще не встигає зникнути.
+xcrun simctl launch "$UDID" "$BUNDLE_ID"
+sleep 12
 shot 01-onboarding
 # Прогрів: перший запуск з демо-даними довший (кеші шрифтів, Charts) — без скриншота.
 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
