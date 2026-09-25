@@ -40,7 +40,7 @@ private struct CompassDial: Shape {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         path.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
         for index in 0..<4 {
-            let angle = Double(index) * .pi / 2
+            let angle = CGFloat(index) * .pi / 2
             let inner = radius * 0.868
             path.move(to: CGPoint(x: center.x + inner * cos(angle), y: center.y + inner * sin(angle)))
             path.addLine(to: CGPoint(x: center.x + radius * cos(angle), y: center.y + radius * sin(angle)))
