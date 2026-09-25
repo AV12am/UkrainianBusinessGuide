@@ -18,13 +18,17 @@ shot() {
   local name="$1"; shift
   xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
   xcrun simctl launch "$UDID" "$BUNDLE_ID" "$@"
-  sleep 6
+  sleep 8
   xcrun simctl io "$UDID" screenshot "$OUT/$name.png"
   echo "📸 $name"
 }
 
 xcrun simctl ui "$UDID" appearance light
 shot 01-onboarding
+# Прогрів: перший запуск з демо-даними довший (кеші шрифтів, Charts) — без скриншота.
+xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+xcrun simctl launch "$UDID" "$BUNDLE_ID" -uiDemo YES -uiTab dashboard
+sleep 12
 shot 02-dashboard     -uiDemo YES -uiTab dashboard
 shot 03-finance       -uiDemo YES -uiTab finance
 shot 04-taxes         -uiDemo YES -uiTab taxes
