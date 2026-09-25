@@ -53,7 +53,7 @@ struct DashboardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.ukrainian)).capitalizedFirstLetter)
+            Eyebrow(Date.now.formatted(Date.FormatStyle.kyiv.weekday(.wide).day().month(.wide)).capitalizedFirstLetter)
             Text(store.profile?.businessName ?? "Мій бізнес")
                 .font(.display(34, weight: .bold))
                 .foregroundStyle(Theme.ink)

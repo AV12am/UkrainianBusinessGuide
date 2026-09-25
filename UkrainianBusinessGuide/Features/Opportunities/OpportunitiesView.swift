@@ -75,7 +75,7 @@ struct ApplicationStatus {
         if opportunity.isOpen(on: now) {
             let days = Calendar.kyiv.dateComponents([.day], from: Calendar.kyiv.startOfDay(for: now),
                                                     to: Calendar.kyiv.startOfDay(for: deadline)).day ?? 0
-            let time = deadline.formatted(.dateTime.hour().minute().locale(.ukrainian))
+            let time = deadline.formatted(Date.FormatStyle.kyiv.hour().minute())
             text = "Прийом заявок до \(deadline.shortUkrainian), \(time)" + (days <= 7 ? ", лишилося \(days) дн." : "")
             color = days <= 7 ? Theme.caution : Theme.inkMuted
         } else {

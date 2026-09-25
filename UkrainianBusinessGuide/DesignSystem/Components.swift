@@ -217,10 +217,10 @@ struct DeadlineRow: View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(deadline.date.formatted(.dateTime.day()))
+                    Text(deadline.date.formatted(Date.FormatStyle.kyiv.day()))
                         .font(.display(24))
                         .monospacedDigit()
-                    Text(deadline.date.formatted(.dateTime.month(.abbreviated).locale(.ukrainian)))
+                    Text(deadline.date.formatted(Date.FormatStyle.kyiv.month(.abbreviated)))
                         .font(.caption)
                         .foregroundStyle(Theme.inkMuted)
                 }

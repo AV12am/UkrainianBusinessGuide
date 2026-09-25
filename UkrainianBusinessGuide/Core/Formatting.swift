@@ -56,13 +56,21 @@ extension Double {
     }
 }
 
+extension Date.FormatStyle {
+    /// Українська локаль і київський час незалежно від часового поясу пристрою:
+    /// усі строки й дати програм задані за Києвом.
+    static var kyiv: Date.FormatStyle {
+        Date.FormatStyle(locale: .ukrainian, calendar: .kyiv, timeZone: Calendar.kyiv.timeZone)
+    }
+}
+
 extension Date {
     var shortUkrainian: String {
-        formatted(.dateTime.day().month(.wide).locale(.ukrainian))
+        formatted(Date.FormatStyle.kyiv.day().month(.wide))
     }
 
     var monthName: String {
-        formatted(.dateTime.month(.wide).locale(.ukrainian))
+        formatted(Date.FormatStyle.kyiv.month(.wide))
     }
 }
 
