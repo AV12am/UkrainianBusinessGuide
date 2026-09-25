@@ -29,7 +29,7 @@ enum OpportunityType: String, CaseIterable, Identifiable {
     }
 }
 
-/// Програма підтримки бізнесу. Умови змінюються — у картці завжди є посилання на офіційне джерело.
+/// Програма підтримки бізнесу. Умови змінюються, тому в картці завжди є посилання на офіційне джерело.
 struct Opportunity: Identifiable {
     let id: String
     let title: String
@@ -42,4 +42,11 @@ struct Opportunity: Identifiable {
     let statuses: Set<FounderStatus> // порожньо = для всіх
     let requiresEmployees: Bool
     let url: URL
+    /// Кінцевий строк прийому заявок, якщо програма працює конкурсами.
+    var applicationDeadline: Date? = nil
+
+    func isOpen(on date: Date = .now) -> Bool {
+        guard let applicationDeadline else { return true }
+        return date <= applicationDeadline
+    }
 }

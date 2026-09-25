@@ -58,10 +58,30 @@ struct OpportunitiesView: View {
         let strong = store.profile.map { profile in
             OpportunityCatalog.all.filter { OpportunityCatalog.matchScore($0, for: profile) >= 0.7 }.count
         } ?? 0
-        return Text("Програми відсортовані за відповідністю вашому бізнесу. Добре підходять \(strong) з \(OpportunityCatalog.all.count).")
+        return Text("Програми відсортовані за відповідністю вашому бізнесу. Добре підходять \(strong) з \(OpportunityCatalog.all.count). Умови звірено \(OpportunityCatalog.verifiedOn.shortUkrainian) \(String(Calendar.kyiv.component(.year, from: OpportunityCatalog.verifiedOn))) року.")
             .font(.body)
             .foregroundStyle(Theme.inkMuted)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Статус прийому заявок для конкурсних програм.
+struct ApplicationStatus {
+    let text: String
+    let color: Color
+
+    init?(_ opportunity: Opportunity, now: Date = .now) {
+        guard let deadline = opportunity.applicationDeadline else { return nil }
+        if opportunity.isOpen(on: now) {
+            let days = Calendar.kyiv.dateComponents([.day], from: Calendar.kyiv.startOfDay(for: now),
+                                                    to: Calendar.kyiv.startOfDay(for: deadline)).day ?? 0
+            let time = deadline.formatted(.dateTime.hour().minute().locale(.ukrainian))
+            text = "Прийом заявок до \(deadline.shortUkrainian), \(time)" + (days <= 7 ? ", лишилося \(days) дн." : "")
+            color = days <= 7 ? Theme.caution : Theme.inkMuted
+        } else {
+            text = "Прийом заявок завершено"
+            color = Theme.inkMuted
+        }
     }
 }
 
@@ -98,6 +118,11 @@ struct OpportunityRow: View {
                     .foregroundStyle(Theme.inkMuted)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
+                if let status = ApplicationStatus(opportunity) {
+                    Text(status.text)
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(status.color)
+                }
                 HStack {
                     Text(opportunity.amountDescription)
                         .font(.subheadline.weight(.semibold))
@@ -139,6 +164,11 @@ struct OpportunityDetailView: View {
                         Text(opportunity.provider)
                             .font(.subheadline)
                             .foregroundStyle(Theme.inkMuted)
+                        if let status = ApplicationStatus(opportunity) {
+                            Text(status.text)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(status.color)
+                        }
                     }
 
                     VStack(spacing: 0) {

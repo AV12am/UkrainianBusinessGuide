@@ -14,6 +14,10 @@ final class AppStore {
     private(set) var profile: BusinessProfile?
     private(set) var transactions: [Transaction] = []
     private(set) var completedDeadlineIDs: Set<String> = []
+    /// Виконані кроки гайду з відкриття бізнесу.
+    private(set) var completedGuideSteps: Set<String> = []
+    /// Чи увімкнені нагадування про податкові строки.
+    private(set) var remindersEnabled = false
 
     var taxEngine = TaxEngine()
 
@@ -24,6 +28,9 @@ final class AppStore {
         var profile: BusinessProfile?
         var transactions: [Transaction]
         var completedDeadlineIDs: Set<String>
+        // Необов'язкові поля: файли, збережені старішими версіями, читаються без помилок.
+        var completedGuideSteps: Set<String>?
+        var remindersEnabled: Bool?
     }
 
     /// `fileURL == nil` — стан лише в пам'яті (превью, тести).
@@ -42,12 +49,14 @@ final class AppStore {
     func saveProfile(_ profile: BusinessProfile) {
         self.profile = profile
         persist()
+        refreshReminders()
     }
 
     func add(_ transaction: Transaction) {
         transactions.append(transaction)
         transactions.sort { $0.date > $1.date }
         persist()
+        refreshReminders()
     }
 
     func delete(_ transaction: Transaction) {
@@ -62,13 +71,55 @@ final class AppStore {
             completedDeadlineIDs.insert(deadline.id)
         }
         persist()
+        refreshReminders()
+    }
+
+    func toggleGuideStep(_ id: String) {
+        if completedGuideSteps.contains(id) {
+            completedGuideSteps.remove(id)
+        } else {
+            completedGuideSteps.insert(id)
+        }
+        persist()
+    }
+
+    // MARK: - Нагадування
+
+    /// Вмикає нагадування (з запитом дозволу) або вимикає їх. Повертає фактичний стан.
+    @discardableResult
+    func setRemindersEnabled(_ enabled: Bool) async -> Bool {
+        if enabled {
+            let granted = await DeadlineReminders.requestAuthorization()
+            remindersEnabled = granted
+        } else {
+            remindersEnabled = false
+        }
+        persist()
+        await rescheduleReminders()
+        return remindersEnabled
+    }
+
+    func refreshReminders() {
+        Task { await rescheduleReminders() }
+    }
+
+    private func rescheduleReminders() async {
+        guard fileURL != nil else { return } // превью й тести
+        if remindersEnabled {
+            await DeadlineReminders.schedule(upcomingDeadlines)
+        } else {
+            await DeadlineReminders.cancelAll()
+        }
     }
 
     func resetAll() {
         profile = nil
         transactions = []
         completedDeadlineIDs = []
+        completedGuideSteps = []
+        remindersEnabled = false
         persist()
+        refreshReminders()
     }
 
     // MARK: - Похідні показники
@@ -226,11 +277,14 @@ final class AppStore {
         profile = snapshot.profile
         transactions = snapshot.transactions.sorted { $0.date > $1.date }
         completedDeadlineIDs = snapshot.completedDeadlineIDs
+        completedGuideSteps = snapshot.completedGuideSteps ?? []
+        remindersEnabled = snapshot.remindersEnabled ?? false
     }
 
     private func persist() {
         guard let fileURL else { return }
-        let snapshot = Snapshot(profile: profile, transactions: transactions, completedDeadlineIDs: completedDeadlineIDs)
+        let snapshot = Snapshot(profile: profile, transactions: transactions, completedDeadlineIDs: completedDeadlineIDs,
+                                completedGuideSteps: completedGuideSteps, remindersEnabled: remindersEnabled)
         do {
             let data = try JSONEncoder().encode(snapshot)
             try data.write(to: fileURL, options: [.atomic, .completeFileProtection])

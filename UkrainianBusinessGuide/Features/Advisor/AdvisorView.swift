@@ -8,11 +8,14 @@ import SwiftUI
 struct AdvisorView: View {
     enum Mode: String, CaseIterable, Identifiable {
         case chat = "Питання"
-        case idea = "Оцінка ідеї"
+        case forms = "Документи"
+        case start = "Відкриття"
+        case idea = "Ідея"
         var id: String { rawValue }
     }
 
-    @State private var mode: Mode = .chat
+    /// `-uiAdvisorMode Документи` у аргументах запуску відкриває потрібний розділ (для скриншотів у CI).
+    @State private var mode: Mode = Mode(rawValue: UserDefaults.standard.string(forKey: "uiAdvisorMode") ?? "") ?? .chat
 
     var body: some View {
         NavigationStack {
@@ -26,6 +29,8 @@ struct AdvisorView: View {
 
                 switch mode {
                 case .chat: AdvisorChatView()
+                case .forms: FormsView()
+                case .start: StartupGuideView()
                 case .idea: IdeaValidatorView()
                 }
             }

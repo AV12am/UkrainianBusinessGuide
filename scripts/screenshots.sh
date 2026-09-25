@@ -35,6 +35,9 @@ shot 04-taxes         -uiDemo YES -uiTab taxes
 shot 05-opportunities -uiDemo YES -uiTab opportunities
 shot 06-advisor       -uiDemo YES -uiTab advisor
 
+shot 09-forms         -uiDemo YES -uiTab advisor -uiAdvisorMode "Документи"
+shot 10-startup-guide -uiDemo YES -uiTab advisor -uiAdvisorMode "Відкриття"
+
 xcrun simctl ui "$UDID" appearance dark
 shot 07-dashboard-dark -uiDemo YES -uiTab dashboard
 shot 08-taxes-dark     -uiDemo YES -uiTab taxes

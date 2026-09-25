@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @Environment(AppStore.self) private var store
     @State private var step = 0
     @State private var draft = BusinessProfile.empty
+    @State private var showGuide = false
 
     private let stepsCount = 3
 
@@ -30,6 +31,7 @@ struct OnboardingView: View {
                 .padding(Theme.gutter)
         }
         .background(Theme.paper.ignoresSafeArea())
+        .sheet(isPresented: $showGuide) { StartupGuideSheet() }
     }
 
     // MARK: - Кроки
@@ -69,6 +71,30 @@ struct OnboardingView: View {
                     feature("3", "Що якщо", "Перш ніж підняти ціни чи найняти людину, подивіться, що буде з прибутком.")
                     feature("4", "Програми підтримки", "Гранти й пільгові кредити, на які ваш бізнес може претендувати.")
                 }
+
+                Button {
+                    showGuide = true
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Плануєте відкрити свою справу?")
+                                .font(.display(20))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "arrow.right").foregroundStyle(Theme.accent)
+                        }
+                        Text("Ще не маєте ФОП? Покажемо всі кроки від реєстрації до першої сплати податків.")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.inkMuted)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous).strokeBorder(Theme.rule))
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 16)
             }
             .padding(.horizontal, Theme.gutter)
         }

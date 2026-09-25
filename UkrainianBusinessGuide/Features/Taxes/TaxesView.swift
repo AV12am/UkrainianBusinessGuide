@@ -62,7 +62,12 @@ struct TaxesView: View {
                 .font(.caption2)
                 .foregroundStyle(Theme.inkMuted)
                 .padding(.top, 8)
-            if usage >= 0.8 {
+            if usage >= 1 {
+                Text("Ліміт перевищено: із суми понад ліміт сплачується 15%, а з наступного кварталу потрібно перейти на іншу групу або загальну систему.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.negative)
+                    .padding(.top, 8)
+            } else if usage >= 0.8 {
                 Text("Ліміт близько: сплануйте перехід на іншу групу або систему оподаткування.")
                     .font(.footnote)
                     .foregroundStyle(Theme.caution)
@@ -94,6 +99,19 @@ struct TaxesView: View {
         return LedgerSection(title: "Календар строків",
                              actionTitle: showCompleted ? "Сховати сплачені" : "Показати всі",
                              action: { withAnimation { showCompleted.toggle() } }) {
+            Toggle(isOn: Binding(
+                get: { store.remindersEnabled },
+                set: { newValue in Task { await store.setRemindersEnabled(newValue) } }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Нагадувати про строки")
+                    Text("За 3 дні й у день сплати о 10:00")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.inkMuted)
+                }
+            }
+            .padding(.vertical, 12)
+            Rule()
             if visible.isEmpty {
                 EmptyNote(text: "Усі строки на найближчі чотири місяці закриті.")
             } else {
