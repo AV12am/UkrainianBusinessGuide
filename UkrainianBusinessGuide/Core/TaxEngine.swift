@@ -121,9 +121,17 @@ struct TaxEngine {
         yearIncome / annualIncomeLimit(for: group)
     }
 
-    /// Найвигідніша група для прогнозованого річного доходу (без урахування обмежень на види діяльності).
-    func recommendedGroup(forAnnualIncome income: Double, isVATPayer: Bool) -> FOPGroup {
-        let candidates = FOPGroup.allCases.filter { annualIncomeLimit(for: $0) >= income }
+    /// Найвигідніша група для прогнозованого річного доходу. Враховує ліміти й кількість працівників
+    /// (1 група без найманих, 2 група до 10), але не обмеження за видами діяльності та клієнтами.
+    func recommendedGroup(forAnnualIncome income: Double, isVATPayer: Bool, employees: Int = 0) -> FOPGroup {
+        let candidates = FOPGroup.allCases.filter { group in
+            guard annualIncomeLimit(for: group) >= income else { return false }
+            switch group {
+            case .first: return employees == 0 && !isVATPayer
+            case .second: return employees <= 10 && !isVATPayer
+            case .third: return true
+            }
+        }
         let cheapest = candidates.min { lhs, rhs in
             quarterlyTaxes(group: lhs, isVATPayer: isVATPayer, quarterIncome: income / 4).total <
                 quarterlyTaxes(group: rhs, isVATPayer: isVATPayer, quarterIncome: income / 4).total

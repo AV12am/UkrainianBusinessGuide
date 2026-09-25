@@ -20,6 +20,8 @@ struct ImportView: View {
     @State private var isLoading = false
     @State private var showFilePicker = false
     @State private var pending: [ImportedOperation] = []
+    /// Операції, які користувач вирішив не додавати (і перекази між своїми рахунками за замовчуванням).
+    @State private var excluded: Set<String> = []
     @State private var source = ""
     @State private var message: String?
     @State private var isError = false
@@ -218,41 +220,66 @@ struct ImportView: View {
         } else {
             message = nil
             source = origin
+            excluded = Set(fresh.filter(\.isLikelyOwnTransfer).map(\.externalID))
             withAnimation { pending = fresh }
         }
     }
 
+    private var included: [ImportedOperation] {
+        pending.filter { !excluded.contains($0.externalID) }
+    }
+
     private var preview: some View {
-        let income = pending.filter { $0.amount > 0 }.reduce(0) { $0 + $1.amount }
-        let expense = pending.filter { $0.amount < 0 }.reduce(0) { $0 - $1.amount }
+        let chosen = included
+        let income = chosen.filter { $0.amount > 0 }.reduce(0) { $0 + $1.amount }
+        let expense = chosen.filter { $0.amount < 0 }.reduce(0) { $0 - $1.amount }
         return VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Eyebrow("Нові операції з \(source)")
-                Text("\(pending.count)")
+                Text("\(chosen.count) з \(pending.count)")
                     .font(.display(44, weight: .bold))
                     .foregroundStyle(Theme.ink)
                 Text("Надходження \(income.uah), списання \(expense.uah)")
                     .font(.subheadline)
                     .monospacedDigit()
                     .foregroundStyle(Theme.inkMuted)
+                Text("Натисніть на операцію, щоб не додавати її. Перекази між власними рахунками вже вимкнено: це не дохід.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
             }
             HStack(spacing: 10) {
-                Button("Скасувати") { withAnimation { pending = [] } }
+                Button("Скасувати") { withAnimation { pending = []; excluded = [] } }
                     .buttonStyle(.outline)
                 Button("Додати в журнал") {
-                    let added = store.importOperations(pending)
-                    withAnimation { pending = [] }
+                    let added = store.importOperations(included)
+                    withAnimation { pending = []; excluded = [] }
                     show("Додано операцій: \(added). Категорії підібрано автоматично, змінити категорію можна довгим натисканням на операцію у «Фінансах».", error: false)
                 }
                 .buttonStyle(.primary)
+                .disabled(chosen.isEmpty)
             }
             VStack(spacing: 0) {
                 Rule(color: Theme.ink.opacity(0.85))
-                ForEach(pending.prefix(50)) { operation in
-                    TransactionRow(transaction: operation.transaction)
+                ForEach(pending.prefix(100)) { operation in
+                    let isOn = !excluded.contains(operation.externalID)
+                    Button {
+                        if isOn { excluded.insert(operation.externalID) } else { excluded.remove(operation.externalID) }
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                                .foregroundStyle(isOn ? Theme.accent : Theme.inkMuted)
+                            TransactionRow(transaction: operation.transaction)
+                                .opacity(isOn ? 1 : 0.45)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel((isOn ? "Буде додано: " : "Не додавати: ") + operation.description)
                 }
-                if pending.count > 50 {
-                    EmptyNote(text: "І ще \(pending.count - 50).")
+                if pending.count > 100 {
+                    EmptyNote(text: "Ще \(pending.count - 100) операцій буде додано разом з показаними.")
                 }
             }
         }

@@ -41,6 +41,7 @@ shot 11-invoices      -uiDemo YES -uiTab finance -uiScreen invoices
 shot 12-invoice-qr    -uiDemo YES -uiTab finance -uiScreen invoice
 shot 13-import        -uiDemo YES -uiTab finance -uiScreen import
 shot 14-declaration   -uiDemo YES -uiTab taxes -uiScreen declaration
+shot 15-splash        -uiDemo YES -uiSplashHold YES
 
 xcrun simctl ui "$UDID" appearance dark
 shot 07-dashboard-dark -uiDemo YES -uiTab dashboard

@@ -14,6 +14,7 @@ struct ScenarioBaseline: Equatable {
     var cash: Double
     var group: FOPGroup
     var isVATPayer: Bool
+    var employees: Int = 0
 }
 
 struct ScenarioInput: Equatable {
@@ -52,7 +53,9 @@ enum ScenarioSimulator {
         // Змінна частина витрат (закупівлі) зростає разом з обсягом; приймаємо 40% витрат як змінні.
         let variableShare = 0.4
         let scaledExpense = baseline.monthlyExpense * ((1 - variableShare) + variableShare * (1 + input.volumeChange))
-        let payroll = Double(input.newHires) * input.salaryPerHire * (1 + employerContributionRate)
+        // ЄСВ за працівника не менший за 22% мінімальної зарплати, навіть якщо зарплата нижча.
+        let contribution = max(input.salaryPerHire, engine.parameters.minimumWage) * employerContributionRate
+        let payroll = Double(input.newHires) * (input.salaryPerHire + contribution)
         let expense = max(0, scaledExpense * (1 + input.expenseChange) + payroll + input.marketingBudget)
 
         let taxes = engine.monthlyTaxes(group: baseline.group, isVATPayer: baseline.isVATPayer, monthlyIncome: income)
@@ -68,7 +71,8 @@ enum ScenarioSimulator {
             runwayMonths: HealthAnalyzer.runwayMonths(cash: baseline.cash, monthlyIncome: income, monthlyExpense: expense + taxes),
             annualIncome: annual,
             exceedsGroupLimit: annual > limit,
-            recommendedGroup: engine.recommendedGroup(forAnnualIncome: annual, isVATPayer: baseline.isVATPayer),
+            recommendedGroup: engine.recommendedGroup(forAnnualIncome: annual, isVATPayer: baseline.isVATPayer,
+                                                      employees: baseline.employees + input.newHires),
             profitDelta: profit - baseProfit
         )
     }

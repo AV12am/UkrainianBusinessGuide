@@ -131,7 +131,14 @@ final class AppStore {
             invoices.append(invoice)
         }
         invoices.sort { $0.issueDate > $1.issueDate }
+        // Якщо відредагували вже оплачений рахунок, дохід у журналі має відповідати новій сумі.
+        if invoice.paidDate != nil,
+           let index = transactions.firstIndex(where: { $0.externalID == Self.invoiceTransactionID(invoice) }) {
+            transactions[index].amount = invoice.total
+            transactions[index].note = "Оплата рахунку № \(invoice.number), \(invoice.clientName)"
+        }
         persist()
+        refreshReminders()
     }
 
     func delete(_ invoice: Invoice) {
@@ -157,10 +164,14 @@ final class AppStore {
         refreshReminders()
     }
 
+    /// Наступний номер після найбільшого за рік: після видалення рахунку номери не повторюються.
     var nextInvoiceNumber: String {
         let year = calendar.component(.year, from: .now)
-        let thisYear = invoices.filter { $0.number.hasPrefix("\(year)-") }.count
-        return "\(year)-" + String(format: "%03d", thisYear + 1)
+        let prefix = "\(year)-"
+        let highest = invoices
+            .compactMap { $0.number.hasPrefix(prefix) ? Int($0.number.dropFirst(prefix.count)) : nil }
+            .max() ?? 0
+        return prefix + String(format: "%03d", highest + 1)
     }
 
     /// Сума неоплачених рахунків.
@@ -306,17 +317,26 @@ final class AppStore {
         }
     }
 
-    /// Середні показники за 3 повні попередні місяці + поточний; якщо даних немає — з профілю.
+    /// Місяці для середніх: до трьох повних попередніх місяців з даними.
+    /// Поточний неповний місяць занижував би середнє на початку місяця, тому він
+    /// враховується лише тоді, коли інших даних ще немає.
+    private var averagingMonths: [MonthSummary] {
+        let summaries = monthlySummaries(months: 4)
+        let complete = summaries.dropLast().filter { $0.income > 0 || $0.expense > 0 }
+        if !complete.isEmpty { return Array(complete) }
+        return summaries.suffix(1).filter { $0.income > 0 || $0.expense > 0 }
+    }
+
     var averageMonthlyIncome: Double {
-        let summaries = monthlySummaries(months: 4).filter { $0.income > 0 || $0.expense > 0 }
-        guard !summaries.isEmpty else { return 0 }
-        return summaries.map(\.income).reduce(0, +) / Double(summaries.count)
+        let months = averagingMonths
+        guard !months.isEmpty else { return 0 }
+        return months.map(\.income).reduce(0, +) / Double(months.count)
     }
 
     var averageMonthlyExpense: Double {
-        let summaries = monthlySummaries(months: 4).filter { $0.income > 0 || $0.expense > 0 }
-        guard !summaries.isEmpty else { return profile?.monthlyFixedCosts ?? 0 }
-        return max(profile?.monthlyFixedCosts ?? 0, summaries.map(\.expense).reduce(0, +) / Double(summaries.count))
+        let months = averagingMonths
+        guard !months.isEmpty else { return profile?.monthlyFixedCosts ?? 0 }
+        return max(profile?.monthlyFixedCosts ?? 0, months.map(\.expense).reduce(0, +) / Double(months.count))
     }
 
     var limitUsage: Double {
@@ -393,7 +413,8 @@ final class AppStore {
             monthlyExpense: averageMonthlyExpense,
             cash: cashBalance,
             group: profile.fopGroup,
-            isVATPayer: profile.isVATPayer
+            isVATPayer: profile.isVATPayer,
+            employees: profile.employees
         )
     }
 

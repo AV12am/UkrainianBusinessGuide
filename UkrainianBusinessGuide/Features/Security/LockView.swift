@@ -11,6 +11,9 @@ struct LockView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Spacer()
+            CompassMark()
+                .frame(width: 72, height: 72)
+                .padding(.bottom, 10)
             Text("Бізнес Компас")
                 .font(.display(34, weight: .bold))
                 .foregroundStyle(Theme.ink)

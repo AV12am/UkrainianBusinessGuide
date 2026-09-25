@@ -60,13 +60,6 @@ struct LocalAdvisor: AdvisorEngine {
             return "Покроковий план відкриття ФОП, від вибору КВЕД до першої сплати податків, є в розділі «Відкриття» вгорі цього екрана. Реєстрація в Дії займає близько 10 хвилин і безкоштовна."
         }
 
-        if has("справи", "бізнес", "стан", "пульс", "здоров") {
-            let top = context.health.insights.first.map { "\n\nГоловне зараз: \($0.title.lowercased()). \($0.message)" } ?? ""
-            return "Стан бізнесу: \(context.health.score) зі 100, \(context.health.verdict.lowercased()).\n"
-                + context.health.components.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n")
-                + top
-        }
-
         if has("наступн", "коли", "строк", "дедлайн", "календар") {
             guard let deadline = context.nextDeadline else {
                 return "Найближчих податкових строків не знайдено. Перевірте вкладку «Податки»."
@@ -77,7 +70,8 @@ struct LocalAdvisor: AdvisorEngine {
 
         if has("групу", "група", "груп", "перейти") {
             let projected = max(context.yearIncome, context.averageMonthlyIncome * 12)
-            let recommended = engine.recommendedGroup(forAnnualIncome: projected, isVATPayer: profile.isVATPayer)
+            let recommended = engine.recommendedGroup(forAnnualIncome: projected, isVATPayer: profile.isVATPayer,
+                                                      employees: profile.employees)
             let usage = engine.limitUsage(group: profile.fopGroup, yearIncome: context.yearIncome)
             var text = "Ви на \(profile.fopGroup.title). Використано \(usage.percent) річного ліміту (\(engine.annualIncomeLimit(for: profile.fopGroup).uah)).\n"
             text += "За прогнозу доходу \(projected.uah) на рік найдешевшою за податками є \(recommended.title)."
@@ -94,7 +88,7 @@ struct LocalAdvisor: AdvisorEngine {
                 + "• Єдиний податок: \(taxes.singleTax.uah)\n"
                 + "• Військовий збір: \(taxes.militaryLevy.uah)\n"
                 + "• ЄСВ: \(taxes.socialContribution.uah)\n\n"
-                + "Порада: відкладайте \(engine.effectiveRate(group: profile.fopGroup, isVATPayer: profile.isVATPayer, quarterIncome: quarterIncome).percent) кожного надходження на окремий рахунок, тоді сплата в строк не стане проблемою."
+                + reserveAdvice(profile: profile, engine: engine)
         }
 
         if has("найм", "працівник", "співробітник", "штат") {
@@ -119,6 +113,22 @@ struct LocalAdvisor: AdvisorEngine {
             return "ФОП 1–2 груп не можуть бути платниками ПДВ. На 3 групі є вибір: 5% єдиного податку без ПДВ або 3% з реєстрацією платником ПДВ. Другий варіант вигідний, якщо ваші клієнти самі платять ПДВ і хочуть податковий кредит. Обов'язкова реєстрація при обсязі операцій понад 1 млн ₴ за 12 місяців стосується загальної системи. Уряд пропонує з 2027 року поширити обов'язковий ПДВ і на «єдинників», але станом на вересень 2026 такий закон не ухвалено. Рішення варто обговорити з бухгалтером."
         }
 
+        // Загальне питання про стан — останнім: слово «бізнес» є й у конкретніших питаннях.
+        if has("справи", "бізнес", "стан", "пульс", "здоров") {
+            let top = context.health.insights.first.map { "\n\nГоловне зараз: \($0.title.lowercased()). \($0.message)" } ?? ""
+            return "Стан бізнесу: \(context.health.score) зі 100, \(context.health.verdict.lowercased()).\n"
+                + context.health.components.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n")
+                + top
+        }
+
         return "Я можу допомогти з податками ФОП, строками сплати, вибором групи, наймом, фінансуванням та аналізом вашого бізнесу. Спробуйте одне з питань нижче."
+    }
+
+    private func reserveAdvice(profile: BusinessProfile, engine: TaxEngine) -> String {
+        if let rate = engine.singleTaxRate(for: profile.fopGroup, isVATPayer: profile.isVATPayer) {
+            return "Порада: відкладайте \((rate + 0.01).percent) кожного надходження і ще \(engine.monthlySocialContribution.uah) на ЄСВ щомісяця. Скільки має лежати зараз, показує рядок «Відкласти на податки» на «Огляді»."
+        }
+        let monthly = (engine.monthlyFixedSingleTax(for: profile.fopGroup) ?? 0) + engine.monthlyFixedMilitaryLevy + engine.monthlySocialContribution
+        return "Порада: податки на вашій групі фіксовані, тож відкладайте \(monthly.uah) щомісяця незалежно від доходу."
     }
 }

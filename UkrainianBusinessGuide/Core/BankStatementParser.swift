@@ -17,6 +17,8 @@ struct ImportedOperation: Identifiable, Equatable {
     let description: String
     var mcc: Int? = nil
 
+    var isLikelyOwnTransfer: Bool { OperationCategorizer.isLikelyOwnTransfer(description) }
+
     var transaction: Transaction {
         Transaction(date: date, amount: abs(amount),
                     category: OperationCategorizer.category(for: description, mcc: mcc, isIncome: amount > 0),
@@ -218,6 +220,16 @@ enum BankStatementParser {
 
 /// Підбирає категорію операції за описом і кодом MCC.
 enum OperationCategorizer {
+    /// Схоже на переказ між власними рахунками: це не дохід і не витрата бізнесу,
+    /// тому під час імпорту такі операції за замовчуванням не додаються.
+    static func isLikelyOwnTransfer(_ description: String) -> Bool {
+        let text = description.lowercased()
+        let markers = ["між власними", "між своїми", "власних коштів", "власний рахунок", "власного рахунку",
+                       "з білої картки", "з чорної картки", "на білу картку", "на чорну картку",
+                       "з картки фоп", "на картку фоп", "з рахунку фоп", "на рахунок фоп", "зі своєї картки", "на свою картку"]
+        return markers.contains { text.contains($0) }
+    }
+
     static func category(for description: String, mcc: Int?, isIncome: Bool) -> TransactionCategory {
         let text = description.lowercased()
         func has(_ words: String...) -> Bool { words.contains { text.contains($0) } }

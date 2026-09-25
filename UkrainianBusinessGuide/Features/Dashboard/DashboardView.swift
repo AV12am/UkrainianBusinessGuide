@@ -27,7 +27,9 @@ struct DashboardView: View {
                     actions
                     health(report)
                     deadlines
-                    notes(report)
+                    if !store.transactions.isEmpty {
+                        notes(report)
+                    }
                 }
                 .padding(.horizontal, Theme.gutter)
                 .padding(.bottom, 32)
@@ -161,7 +163,27 @@ struct DashboardView: View {
 
     // MARK: - Стан бізнесу
 
+    @ViewBuilder
     private func health(_ report: HealthReport) -> some View {
+        if store.transactions.isEmpty {
+            // Без жодної операції оцінка була б «зоною ризику», хоча насправді даних просто немає.
+            LedgerSection(title: "Стан бізнесу") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Оцінка з'явиться після перших операцій. Внесіть доходи й витрати вручну або імпортуйте виписку з банку.")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Нова операція") { showAddTransaction = true }
+                        .buttonStyle(.outline)
+                }
+                .padding(.vertical, 14)
+            }
+        } else {
+            scoredHealth(report)
+        }
+    }
+
+    private func scoredHealth(_ report: HealthReport) -> some View {
         LedgerSection(title: "Стан бізнесу") {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(report.score)")

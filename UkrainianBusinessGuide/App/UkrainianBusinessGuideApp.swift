@@ -11,6 +11,7 @@ import SwiftUI
 struct UkrainianBusinessGuideApp: App {
     @State private var store: AppStore
     @State private var lock: AppLock
+    @State private var showSplash = true
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -33,6 +34,17 @@ struct UkrainianBusinessGuideApp: App {
                 .overlay {
                     if lock.isLocked {
                         LockView()
+                    } else if store.lockEnabled && scenePhase != .active {
+                        // Знімок для перемикача програм робиться до блокування: ховаємо суми одразу.
+                        PrivacyCover()
+                    }
+                }
+                .overlay {
+                    if showSplash {
+                        SplashView {
+                            withAnimation(.easeOut(duration: 0.35)) { showSplash = false }
+                        }
+                        .transition(.opacity)
                     }
                 }
                 .environment(store)

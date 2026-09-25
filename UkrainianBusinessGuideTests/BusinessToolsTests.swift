@@ -145,4 +145,70 @@ final class BusinessToolsTests: XCTestCase {
         XCTAssertEqual(target.paymentDetails, source.paymentDetails)
         XCTAssertThrowsError(try target.restoreBackup(from: Data("{}".utf8)))
     }
+
+    // MARK: - Регресії з повного перегляду
+
+    func testRecommendedGroupRespectsEmployees() {
+        let engine = TaxEngine()
+        XCTAssertEqual(engine.recommendedGroup(forAnnualIncome: 500_000, isVATPayer: false), .first)
+        XCTAssertNotEqual(engine.recommendedGroup(forAnnualIncome: 500_000, isVATPayer: false, employees: 2), .first)
+        XCTAssertEqual(engine.recommendedGroup(forAnnualIncome: 500_000, isVATPayer: false, employees: 12), .third)
+        XCTAssertEqual(engine.recommendedGroup(forAnnualIncome: 500_000, isVATPayer: true), .third)
+    }
+
+    func testEmployerContributionHasMinimumBase() {
+        let baseline = ScenarioBaseline(monthlyIncome: 100_000, monthlyExpense: 50_000, cash: 100_000, group: .third, isVATPayer: false)
+        var input = ScenarioInput()
+        input.newHires = 1
+        input.salaryPerHire = 5_000 // нижче мінімальної зарплати
+        let result = ScenarioSimulator.simulate(baseline, input)
+        XCTAssertEqual(result.profitDelta, -(5_000 + 8_647 * 0.22), accuracy: 0.01)
+    }
+
+    func testGrowthWithoutPreviousIncomeIsNotHundredPercent() {
+        let report = HealthAnalyzer.analyze(HealthInputs(cashBalance: 10_000, averageMonthlyIncome: 5_000, averageMonthlyExpense: 1_000,
+                                                         incomeLast30Days: 5_000, incomePrevious30Days: 0, limitUsage: 0, overdueDeadlines: 0))
+        let growth = try? XCTUnwrap(report.components.first { $0.title == "Динаміка" })
+        XCTAssertEqual(growth?.detail, "Мало даних для порівняння")
+        XCTAssertFalse(report.insights.contains { $0.id == "growth" })
+    }
+
+    func testInvoiceNumbersNeverRepeatAfterDeletion() throws {
+        let store = AppStore(fileURL: nil)
+        store.loadDemo()
+        let year = Calendar.kyiv.component(.year, from: .now)
+        let middle = try XCTUnwrap(store.invoices.first { $0.number == "2026-002" })
+        store.delete(middle)
+        if year == 2026 {
+            XCTAssertEqual(store.nextInvoiceNumber, "2026-004")
+        }
+    }
+
+    func testEditingPaidInvoiceUpdatesIncome() throws {
+        let store = AppStore(fileURL: nil)
+        store.loadDemo()
+        var invoice = try XCTUnwrap(store.invoices.first { $0.paidDate == nil })
+        store.togglePaid(invoice)
+        invoice = try XCTUnwrap(store.invoices.first { $0.id == invoice.id })
+        invoice.items.append(InvoiceItem(title: "Додатково", quantity: 1, price: 1_000))
+        store.save(invoice)
+        let income = try XCTUnwrap(store.transactions.first { $0.externalID == "invoice:" + invoice.id.uuidString })
+        XCTAssertEqual(income.amount, invoice.total, accuracy: 0.01)
+    }
+
+    func testOwnTransfersAreDetected() {
+        XCTAssertTrue(OperationCategorizer.isLikelyOwnTransfer("З білої картки"))
+        XCTAssertTrue(OperationCategorizer.isLikelyOwnTransfer("Переказ між власними рахунками"))
+        XCTAssertFalse(OperationCategorizer.isLikelyOwnTransfer("Оплата від ТОВ Ромашка"))
+    }
+
+    func testAdvisorAnswersFundingQuestionAboutBusiness() async throws {
+        let store = AppStore(fileURL: nil)
+        store.loadDemo()
+        let context = try XCTUnwrap(store.advisorContext)
+        let answer = await LocalAdvisor().reply(to: "Де взяти гроші на розвиток бізнесу?", context: context)
+        XCTAssertTrue(answer.contains("програми"), answer)
+        let health = await LocalAdvisor().reply(to: "Як справи в моєму бізнесі?", context: context)
+        XCTAssertTrue(health.hasPrefix("Стан бізнесу"), health)
+    }
 }

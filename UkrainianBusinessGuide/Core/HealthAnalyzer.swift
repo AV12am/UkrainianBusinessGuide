@@ -94,14 +94,18 @@ enum HealthAnalyzer {
         }
 
         // 3. Динаміка виручки
+        // Без доходу за попередні 30 днів порівнювати нема з чим: не показуємо «+100%».
         let growth: Double
+        let growthDetail: String
         if input.incomePrevious30Days > 0 {
             growth = (input.incomeLast30Days - input.incomePrevious30Days) / input.incomePrevious30Days
+            growthDetail = (growth >= 0 ? "+" : "") + growth.percent
         } else {
-            growth = input.incomeLast30Days > 0 ? 1 : 0
+            growth = 0
+            growthDetail = "Мало даних для порівняння"
         }
         let growthScore = min(1, max(0, 0.5 + growth))
-        components.append(HealthComponent(title: "Динаміка", icon: "arrow.up.right", value: growthScore, detail: (growth >= 0 ? "+" : "") + growth.percent))
+        components.append(HealthComponent(title: "Динаміка", icon: "arrow.up.right", value: growthScore, detail: growthDetail))
         if growth > 0.15 {
             insights.append(Insight(id: "growth", icon: "flame.fill", title: "Виручка зростає",
                                     message: "Дохід за 30 днів вищий на \(growth.percent). Час інвестувати в канал, що дає цей ріст.",
