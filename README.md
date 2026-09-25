@@ -74,6 +74,8 @@ xcodebuild test -scheme UkrainianBusinessGuide -destination 'platform=iOS Simula
 Кожен push запускає GitHub Actions на macOS (`.github/workflows/ios.yml`):
 збірка → юніт-тести → запуск у симуляторі iPhone → скриншоти всіх екранів (світла й темна теми).
 
+**Найшвидше:** гілка [`ci-screenshots`](../../tree/ci-screenshots) — скриншоти останньої збірки видно прямо на GitHub.
+
 **Як переглянути результат:** вкладка **Actions** у репозиторії → останній запуск «iOS збірка» →
 внизу сторінки розділ **Artifacts**:
 - `screenshots` — PNG кожного екрана;
