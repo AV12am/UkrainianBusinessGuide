@@ -2,17 +2,21 @@
 //  UkrainianBusinessGuideApp.swift
 //  UkrainianBusinessGuide
 //
-//  Created by Developer on 2026-04-30
+//  Бізнес Компас — операційна система для українського підприємця.
 //
 
 import SwiftUI
 
 @main
 struct UkrainianBusinessGuideApp: App {
+    @State private var store = AppStore()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.locale, Locale(identifier: "uk_UA"))
+                .environment(store)
+                .environment(\.locale, .ukrainian)
+                .tint(Theme.blue)
         }
     }
 }

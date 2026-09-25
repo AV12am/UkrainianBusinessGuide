@@ -39,3 +39,6 @@ Podfile.lock
 # OS
 Thumbs.db
 .DS_Store
+
+# XcodeGen — проєкт генерується з project.yml
+*.xcodeproj
