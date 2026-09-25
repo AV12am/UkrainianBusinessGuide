@@ -58,7 +58,7 @@ struct TaxesView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 14)
             Meter(value: usage, tint: tint, marks: [0.7, 0.9], height: 6)
-            Text("Позначки на шкалі — 70 % і 90 % ліміту")
+            Text("Позначки на шкалі — 70% і 90% ліміту")
                 .font(.caption2)
                 .foregroundStyle(Theme.inkMuted)
                 .padding(.top, 8)
@@ -78,10 +78,10 @@ struct TaxesView: View {
         return LedgerSection(title: "Поточний квартал") {
             LedgerRow(label: "Дохід за квартал", value: store.quarterIncome.uah)
             LedgerRow(label: "Єдиний податок", value: breakdown.singleTax.uah,
-                      detail: profile.fopGroup == .third ? (profile.isVATPayer ? "3 % доходу" : "5 % доходу") : "Фіксована ставка")
+                      detail: profile.fopGroup == .third ? (profile.isVATPayer ? "3% доходу" : "5% доходу") : "Фіксована ставка")
             LedgerRow(label: "Військовий збір", value: breakdown.militaryLevy.uah,
-                      detail: profile.fopGroup == .third ? "1 % доходу" : "10 % мінімальної зарплати")
-            LedgerRow(label: "ЄСВ", value: breakdown.socialContribution.uah, detail: "22 % мінімальної зарплати")
+                      detail: profile.fopGroup == .third ? "1% доходу" : "10% мінімальної зарплати")
+            LedgerRow(label: "ЄСВ", value: breakdown.socialContribution.uah, detail: "22% мінімальної зарплати")
             LedgerRow(label: "Разом до сплати", value: breakdown.total.uah, emphasized: true, showsRule: false)
         }
     }
@@ -161,7 +161,7 @@ struct TaxesView: View {
             let single = (engine.monthlyFixedSingleTax(for: group) ?? 0).uah
             return "Щомісяця: єдиний податок \(single) (максимальна ставка), військовий збір \(engine.monthlyFixedMilitaryLevy.uah), ЄСВ \(esv)."
         case .third:
-            return "\(isVATPayer ? "3" : "5") % єдиного податку й 1 % військового збору від доходу, плюс ЄСВ \(esv) на місяць."
+            return "\(isVATPayer ? "3" : "5")% єдиного податку й 1% військового збору від доходу, плюс ЄСВ \(esv) на місяць."
         }
     }
 

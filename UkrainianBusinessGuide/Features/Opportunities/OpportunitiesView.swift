@@ -58,7 +58,7 @@ struct OpportunitiesView: View {
         let strong = store.profile.map { profile in
             OpportunityCatalog.all.filter { OpportunityCatalog.matchScore($0, for: profile) >= 0.7 }.count
         } ?? 0
-        return Text("Програми відсортовані за тим, наскільки підходять вашому бізнесу. Добре підходять — \(strong).")
+        return Text("Програми відсортовані за відповідністю вашому бізнесу. Добре підходять \(strong) з \(OpportunityCatalog.all.count).")
             .font(.body)
             .foregroundStyle(Theme.inkMuted)
             .fixedSize(horizontal: false, vertical: true)
@@ -70,7 +70,7 @@ struct MatchLabel: View {
     let match: Double
 
     var body: some View {
-        Text("збіг \(Int((match * 100).rounded())) %")
+        Text("збіг \(Int((match * 100).rounded()))%")
             .font(.footnote.weight(.medium))
             .monospacedDigit()
             .foregroundStyle(match >= 0.7 ? Theme.positive : (match >= 0.4 ? Theme.caution : Theme.inkMuted))

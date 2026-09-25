@@ -113,13 +113,13 @@ struct DashboardView: View {
                 BarMark(
                     x: .value("Місяць", summary.month, unit: .month),
                     y: .value("Дохід", summary.income),
-                    width: .ratio(0.55)
+                    width: .ratio(0.28)
                 )
                 .foregroundStyle(summary.id == summaries.last?.id ? Theme.accent : Theme.ink.opacity(0.18))
             }
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
-            .frame(height: 44)
+            .frame(height: 56)
             Text("Дохід за останні 6 місяців")
                 .font(.caption)
                 .foregroundStyle(Theme.inkMuted)

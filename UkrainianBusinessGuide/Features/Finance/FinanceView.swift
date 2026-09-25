@@ -191,7 +191,7 @@ struct TransactionRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                Text(transaction.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
+                Text(transaction.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits).locale(.ukrainian)))
                     .font(.footnote)
                     .monospacedDigit()
                     .foregroundStyle(Theme.inkMuted)

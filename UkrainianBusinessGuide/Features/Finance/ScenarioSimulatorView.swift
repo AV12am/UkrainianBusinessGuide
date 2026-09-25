@@ -138,7 +138,7 @@ struct ScenarioSimulatorView: View {
                         Text(input.salaryPerHire.uah).font(.subheadline).monospacedDigit()
                     }
                     Slider(value: $input.salaryPerHire, in: 8_647...100_000, step: 1_000)
-                    Text("Плюс ЄСВ 22 % від роботодавця")
+                    Text("Плюс ЄСВ 22% від роботодавця")
                         .font(.caption)
                         .foregroundStyle(Theme.inkMuted)
                 }
