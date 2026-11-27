@@ -1,0 +1,30 @@
+{
+  "name": "termwatch-ua",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Termwatch UA: monitoring of vendor terms and Ukrainian legislation",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "pipeline": "tsx src/cli/run.ts",
+    "prisma:validate": "prisma validate"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
+    "cheerio": "^1.2.0",
+    "diff": "^9.0.0",
+    "robots-parser": "^3.1.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.19.3",
+    "@types/diff": "^7.0.2",
+    "@types/node": "^26.6.11",
+    "domhandler": "^6.0.1",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2"
+  }
+}

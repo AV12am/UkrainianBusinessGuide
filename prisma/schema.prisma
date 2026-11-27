@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Source {
+  id            String   @id
+  vendor        String
+  docType       String
+  url           String
+  language      String
+  intervalHours Int      @default(24)
+  rule          Json?
+  render        String   @default("http")
+  active        Boolean  @default(true)
+  lastCheckedAt DateTime?
+  lastHttpStatus Int?
+  snapshots     Snapshot[]
+  changes       Change[]
+  subprocessors SubprocessorEntry[]
+}
+
+/// Immutable. Never updated after insert.
+model Snapshot {
+  id         String   @id @default(cuid())
+  sourceId   String
+  source     Source   @relation(fields: [sourceId], references: [id])
+  text       String
+  blocks     Json
+  hash       String
+  rawHtmlGz  Bytes
+  httpStatus Int
+  fetchedAt  DateTime
+  @@index([sourceId, fetchedAt])
+  @@index([hash])
+}
+
+model Change {
+  id               String   @id @default(cuid())
+  sourceId         String
+  source           Source   @relation(fields: [sourceId], references: [id])
+  fromSnapshotId   String
+  toSnapshotId     String
+  hunks            Json
+  subprocessorDiff Json?
+  createdAt        DateTime
+  analysisStatus   String
+  analysisAttempts Int      @default(0)
+  analysis         Analysis?
+  @@unique([fromSnapshotId, toSnapshotId])
+}
+
+/// One per Change, shared by all tenants.
+model Analysis {
+  id           String   @id @default(cuid())
+  changeId     String   @unique
+  change       Change   @relation(fields: [changeId], references: [id])
+  result       Json
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Float
+  createdAt    DateTime
+}
+
+model SubprocessorEntry {
+  id          String    @id @default(cuid())
+  sourceId    String
+  source      Source    @relation(fields: [sourceId], references: [id])
+  key         String
+  name        String
+  purpose     String
+  country     String
+  products    String
+  firstSeenAt DateTime
+  addedAt     DateTime? /// null for rows present at baseline
+  removedAt   DateTime?
+  @@index([sourceId, removedAt])
+}
+
+model LlmSpend {
+  day String @id
+  usd Float  @default(0)
+}
