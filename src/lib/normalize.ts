@@ -25,7 +25,7 @@ const ALWAYS_REMOVE = [
 ];
 
 /** Volatile lines that change without the document changing in substance. */
-const DEFAULT_DROP = [
+export const DEFAULT_DROP = [
   "^(last updated|last modified|updated on|page last updated)\\b",
   "^(останнє оновлення|оновлено|дата оновлення)\\b",
   "^©\\s*\\d{4}",
@@ -42,7 +42,8 @@ export function normalize(html: string, rule: ExtractRule = {}): Normalized {
   const $ = cheerio.load(html);
   $([...ALWAYS_REMOVE, ...(rule.remove ?? [])].join(",")).remove();
 
-  let root = rule.selector ? $(rule.selector).first() : $("main").first();
+  // A selector may be a comma-separated list: every match contributes, in document order.
+  let root = rule.selector ? $(rule.selector) : $("main").first();
   if (root.length === 0) root = $("body").first();
   if (root.length === 0) root = $.root();
 
@@ -83,6 +84,22 @@ export function normalize(html: string, rule: ExtractRule = {}): Normalized {
     }
     if (!text || drop.some((r) => r.test(text))) continue;
     blocks.push(text);
+  }
+  return { blocks, text: blocks.join("\n") };
+}
+
+/** Markdown versions (one paragraph or list item per line): same volatile-line rules as HTML. */
+export function normalizeMarkdown(md: string, rule: ExtractRule = {}): Normalized {
+  const drop = [...DEFAULT_DROP, ...(rule.dropBlocks ?? [])].map((p) => new RegExp(p, "i"));
+  const body = md.replace(/^---\n[\s\S]*?\n---\n/, "");
+  const blocks: string[] = [];
+  for (const line of body.split(/\r?\n/)) {
+    // Link destinations and image URLs are markup, not content: [text](url) -> text.
+    const t = clean(
+      line.replace(/!?\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)/g, "$1").replace(/^#{1,6}\s+/, "").replace(/[*_`]+/g, ""),
+    );
+    if (!t || /^[-=_*\s]+$/.test(t) || drop.some((r) => r.test(t))) continue;
+    blocks.push(t);
   }
   return { blocks, text: blocks.join("\n") };
 }

@@ -9,6 +9,10 @@
     "test": "vitest run",
     "pipeline": "tsx src/cli/run.ts",
     "analyze:sample": "tsx src/cli/analyze-sample.ts",
+    "ota:export": "tsx src/cli/ota-export.ts",
+    "ota:replay": "tsx src/cli/replay.ts",
+    "ota:import": "tsx src/cli/ota-import.ts",
+    "ota:verify": "tsx src/cli/ota-verify.ts",
     "prisma:validate": "prisma validate"
   },
   "dependencies": {

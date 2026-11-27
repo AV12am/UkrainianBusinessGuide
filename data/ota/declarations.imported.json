@@ -1,0 +1,393 @@
+{
+  "_license": "EUPL-1.2",
+  "_attribution": "Open Terms Archive Contributors, https://github.com/OpenTermsArchive/contrib-declarations",
+  "_commit": "79e8a214430fefc1018423624d588477f9d035a6",
+  "_note": "Curated data subset. Isolated from engine code on purpose; see data/third-party/open-terms-archive/LICENSES.md",
+  "declarations": [
+    {
+      "id": "ota-github-privacy-policy",
+      "service": "GitHub",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://docs.github.com/en/free-pro-team@latest/github/site-policy/github-privacy-statement",
+      "selectors": [
+        "div#article-contents"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/GitHub.json"
+      }
+    },
+    {
+      "id": "ota-github-terms-of-service",
+      "service": "GitHub",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://docs.github.com/en/free-pro-team@latest/github/site-policy/github-terms-of-service",
+      "selectors": [
+        "div#article-contents"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/GitHub.json"
+      }
+    },
+    {
+      "id": "ota-atlassian-privacy-policy",
+      "service": "Atlassian",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://www.atlassian.com/legal/privacy-policy",
+      "selectors": [
+        "main .column-lg-7"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Atlassian.json"
+      }
+    },
+    {
+      "id": "ota-cloudflare-terms-of-service",
+      "service": "Cloudflare",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://www.cloudflare.com/terms/",
+      "selectors": [
+        ".col-lg-8 > .rich-text-renderer"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Cloudflare.json"
+      }
+    },
+    {
+      "id": "ota-cloudflare-privacy-policy",
+      "service": "Cloudflare",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://www.cloudflare.com/privacypolicy/",
+      "selectors": [
+        ".site-content"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Cloudflare.json"
+      }
+    },
+    {
+      "id": "ota-linear-terms-of-service",
+      "service": "Linear",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://linear.app/terms",
+      "selectors": [
+        "main"
+      ],
+      "remove": [
+        "#skip-nav"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Linear.json"
+      }
+    },
+    {
+      "id": "ota-linear-privacy-policy",
+      "service": "Linear",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://linear.app/privacy",
+      "selectors": [
+        "main"
+      ],
+      "remove": [
+        "#skip-nav"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Linear.json"
+      }
+    },
+    {
+      "id": "ota-zoom-terms-of-service",
+      "service": "Zoom",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://zoom.us/terms",
+      "selectors": [
+        "main"
+      ],
+      "remove": [
+        ".fdn-breadcrumb__list"
+      ],
+      "needsBrowser": true,
+      "unsupported": [
+        "custom filter function"
+      ],
+      "provenance": {
+        "file": "declarations/Zoom.json"
+      }
+    },
+    {
+      "id": "ota-zoom-privacy-policy",
+      "service": "Zoom",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://zoom.us/privacy",
+      "selectors": [
+        ".main-DefaultTemplate"
+      ],
+      "remove": [
+        ".category"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Zoom.json"
+      }
+    },
+    {
+      "id": "ota-paypal-privacy-policy",
+      "service": "PayPal",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://www.paypal.com/cz/webapps/mpp/ua/privacy-full?locale.x=en_CZ",
+      "selectors": [],
+      "remove": [
+        "#ua_skinny_view"
+      ],
+      "needsBrowser": false,
+      "unsupported": [
+        "range selector"
+      ],
+      "provenance": {
+        "file": "declarations/PayPal.json"
+      }
+    },
+    {
+      "id": "ota-paypal-terms-of-service",
+      "service": "PayPal",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://www.paypal.com/cz/webapps/mpp/ua/useragreement-full?locale.x=en_CZ",
+      "selectors": [
+        "#about-account"
+      ],
+      "remove": [
+        ".sub-header-wrapper"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/PayPal.json"
+      }
+    },
+    {
+      "id": "ota-wise-terms-of-service",
+      "service": "Wise",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://wise.com/eu/legal/terms-of-use",
+      "selectors": [
+        ".markdown"
+      ],
+      "remove": [
+        "[href=\"#Start\"]"
+      ],
+      "needsBrowser": false,
+      "unsupported": [
+        "range removal"
+      ],
+      "provenance": {
+        "file": "declarations/Wise.json"
+      }
+    },
+    {
+      "id": "ota-microsoft-terms-of-service",
+      "service": "Microsoft",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://www.microsoft.com/en-gb/servicesagreement/",
+      "selectors": [
+        "main"
+      ],
+      "remove": [
+        ".print",
+        ".tr_Right_Nav_Header_OnePSTemplate",
+        ".back-to-top-button"
+      ],
+      "needsBrowser": false,
+      "unsupported": [
+        "custom filter function"
+      ],
+      "provenance": {
+        "file": "declarations/Microsoft.json"
+      }
+    },
+    {
+      "id": "ota-microsoft-privacy-policy",
+      "service": "Microsoft",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://privacy.microsoft.com/en-gb/privacystatement",
+      "selectors": [
+        "h1, #psp_last_updated, .header_content .Description, .div_content"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [
+        "custom filter function"
+      ],
+      "provenance": {
+        "file": "declarations/Microsoft.json"
+      }
+    },
+    {
+      "id": "ota-google-cloud-platform-terms-of-service",
+      "service": "Google Cloud Platform",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://cloud.google.com/terms/",
+      "selectors": [
+        ".devsite-article"
+      ],
+      "remove": [
+        ".cws-breadcrumb"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Google Cloud Platform.json"
+      }
+    },
+    {
+      "id": "ota-amazon-web-services-terms-of-service",
+      "service": "Amazon Web Services",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "https://aws.amazon.com/service-terms/",
+      "selectors": [
+        "#aws-page-content-main"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Amazon Web Services.json"
+      }
+    },
+    {
+      "id": "ota-amazon-web-services-acceptable-use-policy",
+      "service": "Amazon Web Services",
+      "otaDocType": "Acceptable Use Policy",
+      "docType": "terms",
+      "url": "https://aws.amazon.com/aup/",
+      "selectors": [
+        "#aws-page-content-main"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Amazon Web Services.json"
+      }
+    },
+    {
+      "id": "ota-amazon-web-services-privacy-policy",
+      "service": "Amazon Web Services",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://aws.amazon.com/privacy/",
+      "selectors": [
+        "#aws-page-content-main"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Amazon Web Services.json"
+      }
+    },
+    {
+      "id": "ota-apple-privacy-policy",
+      "service": "Apple",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://www.apple.com/legal/privacy/en-ww/",
+      "selectors": [
+        ".section-hero > .section-content",
+        ".section-transparency-accordion"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Apple.json"
+      }
+    },
+    {
+      "id": "ota-telegram-privacy-policy",
+      "service": "Telegram",
+      "otaDocType": "Privacy Policy",
+      "docType": "privacy",
+      "url": "https://telegram.org/privacy",
+      "selectors": [
+        ".tl_page_container"
+      ],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Telegram.json"
+      }
+    },
+    {
+      "id": "ota-telegram-terms-of-service",
+      "service": "Telegram",
+      "otaDocType": "Terms of Service",
+      "docType": "terms",
+      "url": "",
+      "selectors": [],
+      "remove": [],
+      "needsBrowser": false,
+      "unsupported": [
+        "combined pages",
+        "no selector",
+        "no url"
+      ],
+      "provenance": {
+        "file": "declarations/Telegram.json"
+      }
+    },
+    {
+      "id": "ota-telegram-developer-terms",
+      "service": "Telegram",
+      "otaDocType": "Developer Terms",
+      "docType": "terms",
+      "url": "https://core.telegram.org/api/terms",
+      "selectors": [
+        "#dev_page_content_wrap"
+      ],
+      "remove": [
+        ".breadcrumb"
+      ],
+      "needsBrowser": false,
+      "unsupported": [],
+      "provenance": {
+        "file": "declarations/Telegram.json"
+      }
+    }
+  ]
+}

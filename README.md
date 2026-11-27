@@ -55,3 +55,18 @@ Not measured yet (no API key was available in the build session). Cost = tokens 
 Unchanged documents and subprocessor changes cost zero LLM calls.
 
 Every summary must carry the disclaimer in `src/lib/disclaimer.ts`.
+
+## Open Terms Archive data (data only)
+
+Licenses are recorded in `data/third-party/open-terms-archive/LICENSES.md` (versions: ODC-By 1.0; declarations: EUPL-1.2).
+No OTA engine code is used.
+
+```bash
+git clone --depth 1 https://github.com/OpenTermsArchive/contrib-versions   # then: git fetch --shallow-since=2024-06-01 origin
+npm run ota:export -- --repo <clone> --path "GitHub/Terms of Service.md" --out .data/ota/github-terms
+npm run ota:replay -- --dir .data/ota/github-terms --id github-terms --vendor GitHub --doc terms [--analyze]
+npm run ota:import -- --declarations <contrib-declarations clone>/declarations
+npm run ota:verify
+```
+
+Replay results: `docs/replay/`. Imported declarations stay **inactive** until `ota:verify` fetches them ourselves.

@@ -35,3 +35,17 @@ describe("diffBlocks", () => {
     expect(diffBlocks(b, b).hunks).toHaveLength(0);
   });
 });
+
+describe("normalizeMarkdown", () => {
+  it("ignores link destinations and markup, keeps link text", async () => {
+    const { normalizeMarkdown } = await import("../src/lib/normalize.js");
+    const a = normalizeMarkdown("# Terms\n\nSee [the policy](https://x.test/old#a) for **details**.\n").blocks;
+    const b = normalizeMarkdown("# Terms\n\nSee [the policy](https://x.test/new-path) for details.\n").blocks;
+    expect(a).toEqual(["Terms", "See the policy for details."]);
+    expect(a).toEqual(b);
+  });
+  it("drops last-updated lines and front matter", async () => {
+    const { normalizeMarkdown } = await import("../src/lib/normalize.js");
+    expect(normalizeMarkdown("---\nx: 1\n---\nLast updated: May 2\nBody text\n").blocks).toEqual(["Body text"]);
+  });
+});

@@ -1,0 +1,93 @@
+{
+  "ota-github-privacy-policy": {
+    "status": "ok",
+    "chars": 40309,
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-github-terms-of-service": {
+    "status": "ok",
+    "chars": 45657,
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-atlassian-privacy-policy": {
+    "status": "selector_no_match",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-cloudflare-terms-of-service": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-cloudflare-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-linear-terms-of-service": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-linear-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-zoom-terms-of-service": {
+    "status": "unsupported: custom filter function",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-zoom-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-paypal-privacy-policy": {
+    "status": "unsupported: range selector",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-paypal-terms-of-service": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-wise-terms-of-service": {
+    "status": "unsupported: range removal",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-microsoft-terms-of-service": {
+    "status": "unsupported: custom filter function",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-microsoft-privacy-policy": {
+    "status": "unsupported: custom filter function",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-google-cloud-platform-terms-of-service": {
+    "status": "ok",
+    "chars": 59981,
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-amazon-web-services-terms-of-service": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-amazon-web-services-acceptable-use-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-amazon-web-services-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-apple-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-telegram-privacy-policy": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-telegram-terms-of-service": {
+    "status": "unsupported: combined pages, no selector, no url",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  },
+  "ota-telegram-developer-terms": {
+    "status": "unreachable",
+    "checkedAt": "2026-11-27T07:41:03.574Z"
+  }
+}

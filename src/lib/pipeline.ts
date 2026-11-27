@@ -1,6 +1,6 @@
 import { gzip, sha256 } from "./hash.js";
 import { diffBlocks } from "./diff.js";
-import { normalize, type ExtractRule, type Normalized } from "./normalize.js";
+import { normalize, normalizeMarkdown, type ExtractRule, type Normalized } from "./normalize.js";
 import { isPdf, normalizePdf } from "./pdf.js";
 import { RobotsBlockedError, type FetchResult, type Fetcher } from "./fetch.js";
 import { costUsd, type LlmClient, type Pricing } from "./llm.js";
@@ -18,8 +18,8 @@ export interface Source {
   docType: DocType;
   url: string;
   rule?: ExtractRule;
-  /** Default "html". "pdf" extracts the text layer of a PDF. */
-  format?: "html" | "pdf";
+  /** Default "html". "pdf" extracts the text layer of a PDF; "markdown" treats the body as Markdown text. */
+  format?: "html" | "pdf" | "markdown";
   intervalHours: number;
   language: "uk" | "en";
   /** "browser" forces the Playwright fallback; "auto" uses it when plain HTML has no content. */
@@ -72,7 +72,9 @@ export async function runSource(source: Source, deps: Deps): Promise<RunResult> 
 
   const isPdfSource = source.format === "pdf";
   const extract = async (p: typeof page): Promise<Normalized> =>
-    isPdfSource ? normalizePdf(p.bytes ?? Buffer.alloc(0), source.rule) : normalize(p.html, source.rule);
+    isPdfSource ? normalizePdf(p.bytes ?? Buffer.alloc(0), source.rule)
+      : source.format === "markdown" ? normalizeMarkdown(p.html, source.rule)
+      : normalize(p.html, source.rule);
 
   if (isPdfSource && !isPdf(page.bytes)) {
     return { ...base, status: "fetch_failed", detail: `expected a PDF, got ${page.contentType || "unknown content type"}` };
