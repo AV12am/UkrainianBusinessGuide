@@ -14,9 +14,6 @@ const arg = (n: string) => {
   const i = process.argv.indexOf(`--${n}`);
   return i >= 0 ? process.argv[i + 1] : undefined;
 };
-const dir = arg("declarations");
-const out = arg("out") ?? "data/ota/declarations.imported.json";
-if (!dir) { console.error("usage: --declarations <dir> [--out file]"); process.exit(1); }
 
 /** Services relevant to Ukrainian IT companies. Everything else in the collection is out of scope. */
 export const SERVICES = [
@@ -87,6 +84,9 @@ export function convert(service: string, file: string, terms: Record<string, unk
 
 // Only run the import when executed directly.
 if (process.argv[1]?.endsWith("ota-import.ts")) {
+  const dir = arg("declarations");
+  const out = arg("out") ?? "data/ota/declarations.imported.json";
+  if (!dir) { console.error("usage: --declarations <dir> [--out file]"); process.exit(1); }
   const all: ImportedDeclaration[] = [];
   const skipped: string[] = [];
   const missing: string[] = [];
