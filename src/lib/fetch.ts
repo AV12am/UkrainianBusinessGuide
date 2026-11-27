@@ -1,6 +1,14 @@
 import robotsParser from "robots-parser";
 
-export interface FetchResult { status: number; html: string; finalUrl: string }
+export interface FetchResult {
+  status: number;
+  /** Decoded text for HTML responses; empty for PDFs. */
+  html: string;
+  /** Raw response bytes; always set by HttpFetcher. */
+  bytes?: Buffer;
+  contentType?: string;
+  finalUrl: string;
+}
 export interface Fetcher { fetch(url: string): Promise<FetchResult> }
 
 export class RobotsBlockedError extends Error {}
@@ -47,7 +55,10 @@ export class HttpFetcher implements Fetcher {
       redirect: "follow",
       signal: AbortSignal.timeout(this.timeoutMs),
     });
-    return { status: res.status, html: await res.text(), finalUrl: res.url };
+    const bytes = Buffer.from(await res.arrayBuffer());
+    const contentType = res.headers.get("content-type") ?? "";
+    const isPdf = /pdf/i.test(contentType) || bytes.subarray(0, 5).toString("latin1") === "%PDF-";
+    return { status: res.status, html: isPdf ? "" : bytes.toString("utf8"), bytes, contentType, finalUrl: res.url };
   }
 }
 

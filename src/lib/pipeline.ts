@@ -1,7 +1,8 @@
 import { gzip, sha256 } from "./hash.js";
 import { diffBlocks } from "./diff.js";
-import { normalize, type ExtractRule } from "./normalize.js";
-import { RobotsBlockedError, type Fetcher } from "./fetch.js";
+import { normalize, type ExtractRule, type Normalized } from "./normalize.js";
+import { isPdf, normalizePdf } from "./pdf.js";
+import { RobotsBlockedError, type FetchResult, type Fetcher } from "./fetch.js";
 import { costUsd, type LlmClient, type Pricing } from "./llm.js";
 import type { AnalysisStatus, ChangeRecord, Store } from "./store.js";
 import {
@@ -17,6 +18,8 @@ export interface Source {
   docType: DocType;
   url: string;
   rule?: ExtractRule;
+  /** Default "html". "pdf" extracts the text layer of a PDF. */
+  format?: "html" | "pdf";
   intervalHours: number;
   language: "uk" | "en";
   /** "browser" forces the Playwright fallback; "auto" uses it when plain HTML has no content. */
@@ -54,7 +57,7 @@ export async function runSource(source: Source, deps: Deps): Promise<RunResult> 
   const at = deps.now().toISOString();
   const base = { sourceId: source.id, llmCalls: 0 };
 
-  let page;
+  let page: FetchResult;
   try {
     const wantBrowser = source.render === "browser" && deps.browserFetcher;
     page = await (wantBrowser ? deps.browserFetcher! : deps.fetcher).fetch(source.url);
@@ -67,11 +70,20 @@ export async function runSource(source: Source, deps: Deps): Promise<RunResult> 
     return { ...base, status: "fetch_failed", detail: `HTTP ${page.status}` };
   }
 
-  let norm = normalize(page.html, source.rule);
+  const isPdfSource = source.format === "pdf";
+  const extract = async (p: typeof page): Promise<Normalized> =>
+    isPdfSource ? normalizePdf(p.bytes ?? Buffer.alloc(0), source.rule) : normalize(p.html, source.rule);
+
+  if (isPdfSource && !isPdf(page.bytes)) {
+    return { ...base, status: "fetch_failed", detail: `expected a PDF, got ${page.contentType || "unknown content type"}` };
+  }
+  let norm: Normalized;
+  try { norm = await extract(page); }
+  catch (e) { return { ...base, status: "fetch_failed", detail: `PDF parse error: ${(e as Error).message}` }; }
   const minChars = source.minChars ?? 200;
-  if (norm.text.length < minChars && source.render === "auto" && deps.browserFetcher) {
+  if (norm.text.length < minChars && !isPdfSource && source.render === "auto" && deps.browserFetcher) {
     page = await deps.browserFetcher.fetch(source.url);
-    norm = normalize(page.html, source.rule);
+    norm = await extract(page);
   }
   if (norm.text.length < minChars) {
     return { ...base, status: "empty_content", detail: `${norm.text.length} chars extracted` };
@@ -86,11 +98,11 @@ export async function runSource(source: Source, deps: Deps): Promise<RunResult> 
 
   const snap = await store.addSnapshot(
     { sourceId: source.id, text: norm.text, blocks: norm.blocks, hash, httpStatus: page.status, fetchedAt: at },
-    gzip(page.html),
+    gzip(page.bytes ?? page.html),
   );
 
   const isSub = source.docType === "subprocessors";
-  const rows = isSub ? parseSubprocessors(page.html) : [];
+  const rows = isSub && !isPdfSource ? parseSubprocessors(page.html) : [];
 
   if (!prev) {
     if (isSub) await store.applySubprocessors(source.id, rows, null, at);

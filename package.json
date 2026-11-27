@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "pipeline": "tsx src/cli/run.ts",
+    "analyze:sample": "tsx src/cli/analyze-sample.ts",
     "prisma:validate": "prisma validate"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "cheerio": "^1.2.0",
     "diff": "^9.0.0",
     "robots-parser": "^3.1.2",
+    "unpdf": "^2.2.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {

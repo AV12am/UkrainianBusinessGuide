@@ -7,7 +7,7 @@ explanation of what each change means. Build brief: stages 1 to 5. **Current sta
 
 | Stage | Scope | State |
 |---|---|---|
-| 1 | Module A pipeline on real vendors | done (see below) |
+| 1 | Module A pipeline on real vendors | done; PDF sources added; historical replay and real-LLM cost pending |
 | 2 | Module B: Rada open data adapter | not started |
 | 3 | Alerts, Telegram bot | not started |
 | 4 | App screens (Next.js) | not started |
@@ -43,6 +43,7 @@ State is written to `.data/` (JSON plus gzipped raw HTML per snapshot).
 
 ## Adding a vendor source
 
+PDF sources use `format: "pdf"` (text layer only; scanned PDFs yield no text and are reported as `empty_content`).
 Add an entry to `src/catalog/sources.ts` (`id`, `vendor`, `docType`, `url`, `rule.selector`, optional
 `rule.remove` / `rule.dropBlocks` for volatile text). Fetch it by hand first and confirm `robots.txt` allows it.
 For subprocessor lists use `docType: "subprocessors"`; the table needs a header with "Sub-processor" or "Name".

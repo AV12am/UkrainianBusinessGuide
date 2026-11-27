@@ -18,9 +18,17 @@ export const SOURCES: Source[] = [
     rule: { selector: "main" },
   },
   {
-    // NOTE: retail card tariffs. The business (РКО) tariff page URL is still to be found.
-    id: "privatbank-card-tariffs", vendor: "ПриватБанк", docType: "tariffs", language: "uk", intervalHours: 24,
-    url: "https://privatbank.ua/tariffs",
-    rule: { selector: "main" },
+    id: "privatbank-business-tariffs", vendor: "ПриватБанк", docType: "tariffs", language: "uk", intervalHours: 24,
+    url: "https://privatbank.ua/business/small-and-medium/settlement-cash-services",
+    // #main holds the tariff tables; the exchange-rate widget sits outside it and changes daily.
+    rule: { selector: "#main" },
+  },
+  {
+    id: "privatbank-rko-pdf", vendor: "ПриватБанк", docType: "tariffs", language: "uk", intervalHours: 24,
+    url: "https://privatbank.ua/get/table/14/pdf", format: "pdf",
+  },
+  {
+    id: "privatbank-it-expert-pdf", vendor: "ПриватБанк", docType: "tariffs", language: "uk", intervalHours: 24,
+    url: "https://privatbank.ua/get/table/272/pdf", format: "pdf",
   },
 ];
